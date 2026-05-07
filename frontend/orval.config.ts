@@ -8,7 +8,10 @@ export default defineConfig({
       schemas: 'src/api/models',
       client: 'axios-functions',
       mode: 'tags-split',
-      mock: true,
+      mock: {
+        type: 'msw',
+        useExamples: true,
+      },
       override: {
         mutator: {
           path: 'src/api/axios.ts',

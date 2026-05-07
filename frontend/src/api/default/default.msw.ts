@@ -22,11 +22,11 @@ import type {
 } from '../models';
 
 
-export const getListItemsResponseMock = (): Item[] => (Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}}), price: faker.number.int()})))
+export const getListItemsResponseMock = (): Item[] => ([{"id":1,"name":"ペン","price":200},{"id":2,"name":"ノート","price":800}])
 
 export const getCreateItemResponseMock = (overrideResponse: Partial<Extract<Item, object>> = {}): Item => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}}), price: faker.number.int(), ...overrideResponse})
 
-export const getGetItemResponseMock = (overrideResponse: Partial<Extract<Item, object>> = {}): Item => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}}), price: faker.number.int(), ...overrideResponse})
+export const getGetItemResponseMock = (): Item => ({"id":1,"name":"ペン","price":200})
 
 
 export const getListItemsMockHandler = (overrideResponse?: Item[] | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<Item[]> | Item[]), options?: RequestHandlerOptions) => {
