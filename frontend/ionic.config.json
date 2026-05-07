@@ -1,0 +1,7 @@
+{
+  "name": "ionic-temp-scaffold",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue-vite"
+}
