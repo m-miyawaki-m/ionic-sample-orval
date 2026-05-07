@@ -14,11 +14,10 @@ import { request } from '.././axios';
 
 
 
-  export const getDefault = () => {
-/**
+  /**
  * @summary List all items
  */
-const listItems = (
+export const listItems = (
 
  ) => {
       return request<Item[]>(
@@ -29,7 +28,7 @@ const listItems = (
   /**
  * @summary Create a new item
  */
-const createItem = (
+export const createItem = (
     itemCreate: ItemCreate,
  ) => {
       return request<Item>(
@@ -42,7 +41,7 @@ const createItem = (
   /**
  * @summary Get one item by id
  */
-const getItem = (
+export const getItem = (
     id: number,
  ) => {
       return request<Item>(
@@ -53,7 +52,7 @@ const getItem = (
   /**
  * @summary Delete one item
  */
-const deleteItem = (
+export const deleteItem = (
     id: number,
  ) => {
       return request<void>(
@@ -61,4 +60,3 @@ const deleteItem = (
     },
       );
     }
-  return {}};

@@ -1,8 +1,7 @@
-import { createApp } from 'vue'
-import App from './App.vue'
-import router from './router';
-
+import { createApp } from 'vue';
 import { IonicVue } from '@ionic/vue';
+import { createRouter, createWebHistory } from '@ionic/vue-router';
+import App from './App.vue';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/vue/css/core.css';
@@ -34,11 +33,18 @@ import '@ionic/vue/css/palettes/dark.system.css';
 /* Theme variables */
 import './theme/variables.css';
 
+import { routes } from './router';
+
 async function bootstrap() {
   if (import.meta.env.VITE_USE_MOCK === 'msw') {
     const { worker } = await import('./mocks/browser')
     await worker.start({ onUnhandledRequest: 'bypass' })
   }
+
+  const router = createRouter({
+    history: createWebHistory(import.meta.env.BASE_URL),
+    routes,
+  });
 
   const app = createApp(App).use(IonicVue).use(router);
   await router.isReady();

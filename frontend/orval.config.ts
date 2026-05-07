@@ -6,7 +6,7 @@ export default defineConfig({
     output: {
       target: 'src/api/index.ts',
       schemas: 'src/api/models',
-      client: 'axios',
+      client: 'axios-functions',
       mode: 'tags-split',
       mock: true,
       override: {
