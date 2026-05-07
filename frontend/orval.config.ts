@@ -12,7 +12,7 @@ export default defineConfig({
       override: {
         mutator: {
           path: 'src/api/axios.ts',
-          name: 'axios',
+          name: 'request',
         },
       },
     },

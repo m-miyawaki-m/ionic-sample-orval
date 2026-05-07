@@ -10,7 +10,7 @@ import type {
   ItemCreate
 } from '../models';
 
-import { axios } from '.././axios';
+import { request } from '.././axios';
 
 
 
@@ -21,7 +21,7 @@ import { axios } from '.././axios';
 const listItems = (
 
  ) => {
-      return axios<Item[]>(
+      return request<Item[]>(
       {url: `/api/items`, method: 'GET'
     },
       );
@@ -32,7 +32,7 @@ const listItems = (
 const createItem = (
     itemCreate: ItemCreate,
  ) => {
-      return axios<Item>(
+      return request<Item>(
       {url: `/api/items`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: itemCreate
@@ -45,7 +45,7 @@ const createItem = (
 const getItem = (
     id: number,
  ) => {
-      return axios<Item>(
+      return request<Item>(
       {url: `/api/items/${id}`, method: 'GET'
     },
       );
@@ -56,7 +56,7 @@ const getItem = (
 const deleteItem = (
     id: number,
  ) => {
-      return axios<void>(
+      return request<void>(
       {url: `/api/items/${id}`, method: 'DELETE'
     },
       );

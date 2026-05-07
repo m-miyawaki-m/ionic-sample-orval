@@ -4,7 +4,7 @@ const baseURL = import.meta.env.VITE_API_BASE_URL ?? ''
 
 export const axiosInstance = Axios.create({ baseURL })
 
-export const axios = <T>(config: AxiosRequestConfig): Promise<T> => {
+export const request = <T>(config: AxiosRequestConfig): Promise<T> => {
   const source = Axios.CancelToken.source()
   const promise = axiosInstance({ ...config, cancelToken: source.token }).then(
     ({ data }) => data,
