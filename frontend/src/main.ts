@@ -34,10 +34,15 @@ import '@ionic/vue/css/palettes/dark.system.css';
 /* Theme variables */
 import './theme/variables.css';
 
-const app = createApp(App)
-  .use(IonicVue)
-  .use(router);
+async function bootstrap() {
+  if (import.meta.env.VITE_USE_MOCK === 'msw') {
+    const { worker } = await import('./mocks/browser')
+    await worker.start({ onUnhandledRequest: 'bypass' })
+  }
 
-router.isReady().then(() => {
+  const app = createApp(App).use(IonicVue).use(router);
+  await router.isReady();
   app.mount('#app');
-});
+}
+
+bootstrap();

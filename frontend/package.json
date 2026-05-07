@@ -44,5 +44,10 @@
     "vitest": "^0.34.6",
     "vue-tsc": "^2.1.10"
   },
-  "description": "An Ionic project"
+  "description": "An Ionic project",
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
+  }
 }
