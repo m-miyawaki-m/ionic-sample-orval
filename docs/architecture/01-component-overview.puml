@@ -1,0 +1,88 @@
+@startuml component-overview
+title ionic-sample-orval — Component Overview
+
+!theme plain
+skinparam componentStyle rectangle
+skinparam backgroundColor #FAFAFA
+skinparam padding 4
+
+package "openapi/" as OAPKG #LightYellow {
+  [openapi.yaml] as YAML
+}
+
+package "Code Generation\n(`npm run gen`)" as GEN #LightCyan {
+  [Orval CLI] as ORVAL
+}
+
+package "Frontend\n(Ionic Vue + Capacitor 5)" as FE #White {
+
+  package "src/api/ (generated)" as API #FFE0B2 {
+    [models/Item.ts] as TYPES
+    [default/default.ts] as CLIENT
+    [default/default.msw.ts] as MSWGEN
+  }
+
+  [src/api/axios.ts\n(mutator)] as MUTATOR #LightGreen
+
+  package "src/views/" as VIEWS {
+    [ListView.vue]
+    [DetailView.vue]
+    [CreateView.vue]
+  }
+
+  package "src/mocks/" as MOCKS #FFCCBC {
+    [handlers.ts]
+    [browser.ts]
+  }
+
+  [src/main.ts] as MAIN
+  [Capacitor Android] as CAPAND
+}
+
+package "Backend\n(Spring Boot 3.5)" as BE #E1BEE7 {
+  [ItemController] as CTRL
+  [ItemService] as SVC
+  [Item / ItemCreate\n(records)] as DTO
+  [CorsConfig] as CORS
+  [Springdoc UI\n/v3/api-docs] as DOCS
+}
+
+package "Mock Server" as MS #FFF59D {
+  [Prism CLI :4010] as PRISM
+}
+
+' --- Code generation flow ---
+YAML -down-> ORVAL : reads
+ORVAL -down-> TYPES : generates
+ORVAL -down-> CLIENT : generates
+ORVAL -down-> MSWGEN : generates
+
+' --- Spec usage (other consumers) ---
+YAML --> PRISM : reads at startup
+YAML ..> CTRL : manual\nimplementation\nreference
+
+' --- Frontend wiring ---
+VIEWS --> CLIENT : import functions
+VIEWS --> TYPES : import types
+CLIENT --> MUTATOR : uses request<T>
+MOCKS --> MSWGEN : import handlers
+MAIN --> MOCKS : starts MSW (dev)
+MAIN --> VIEWS : mounts router
+
+' --- Runtime data paths ---
+MUTATOR ..> MOCKS : intercepted\nby Service Worker\n(MSW mode)
+MUTATOR ..> PRISM : HTTP\n(Prism mode)
+MUTATOR ..> CTRL : HTTP\n(real BE mode)
+
+' --- Backend internals ---
+CTRL --> SVC
+SVC --> DTO
+CTRL --> DTO
+CORS ..> CTRL
+DOCS ..> CTRL : exposes via\nannotations
+
+' --- Capacitor wraps frontend ---
+FE -[hidden]-> CAPAND
+MAIN ..> CAPAND : built into\nWebView
+
+@enduml

@@ -1,0 +1,104 @@
+@startuml deployment-modes
+title Deployment Topology — 4 Run Modes
+
+!theme plain
+skinparam backgroundColor #FAFAFA
+skinparam componentStyle rectangle
+
+' ============================
+' Mode A: MSW (browser-only)
+' ============================
+package "Mode A: MSW モード\n(VITE_USE_MOCK=msw)" as MA #E8F5E9 {
+  node "Vite dev :5173" as A_VITE_NODE {
+    [Vue + Service Worker] as A_VUE
+  }
+  database "openapi.yaml\n(via Orval gen)" as A_YAML
+  A_YAML ..> A_VUE : embedded\n(MSW handlers)
+  note as A_NOTE
+    起動するもの:
+      • Vite dev server のみ
+    通信:
+      • ブラウザ内で完結
+      • サーバープロセス不要
+    用途:
+      • 個人開発
+      • Vitest テスト
+  end note
+}
+
+' ============================
+' Mode B: Real BE
+' ============================
+package "Mode B: 実 BE 連携\n(VITE_USE_MOCK=none, BASE=http://localhost:8080)" as MB #BBDEFB {
+  node "Vite dev :5173" as B_VITE {
+    [Vue (no MSW)] as B_VUE
+  }
+  node "Spring Boot :8080" as B_BE {
+    [ItemController] as B_CTRL
+    [ItemService] as B_SVC
+    database "items (memory)" as B_DB
+  }
+  B_VUE -down-> B_CTRL : HTTP /api/items\n(CORS allowed)
+  B_CTRL --> B_SVC
+  B_SVC --> B_DB
+
+  note as B_NOTE
+    起動するもの:
+      • Vite dev server
+      • Spring Boot (mvnw spring-boot:run)
+    用途:
+      • 統合動作確認
+      • 永続データ
+      • Swagger UI 利用
+  end note
+}
+
+' ============================
+' Mode C: Prism mock
+' ============================
+package "Mode C: Prism モック\n(VITE_USE_MOCK=none, BASE=http://localhost:4010)" as MC #FFE0B2 {
+  node "Vite dev :5173" as C_VITE {
+    [Vue (no MSW)] as C_VUE
+  }
+  node "Prism :4010" as C_PRISM {
+    [Prism CLI] as C_CLI
+  }
+  database "openapi.yaml" as C_YAML
+  C_VUE -down-> C_CLI : HTTP /api/items
+  C_YAML --> C_CLI : load at startup
+  note as C_NOTE
+    起動するもの:
+      • Vite dev server
+      • Prism (start-mock-prism.cmd)
+    用途:
+      • Postman/curl からも叩く
+      • 仕様準拠の検証
+      • バックエンド未実装時
+  end note
+}
+
+' ============================
+' Mode D: Android
+' ============================
+package "Mode D: Android 実機 / エミュレータ\n(npx cap open android → Run)" as MD #F8BBD0 {
+  node "Android デバイス\n(WebView 内)" as D_DEV {
+    [Vue (Cap-wrapped)] as D_VUE
+  }
+  node "PC (Spring Boot or Prism)" as D_HOST {
+    [Backend or Prism] as D_SRV
+  }
+  D_VUE -down-> D_SRV : HTTP\n(PC IP 指定)
+  note as D_NOTE
+    起動するもの:
+      • Spring Boot or Prism on PC
+      • Android Studio で Run
+    注意:
+      • MSW は WebView で制限あり
+      • 同一 LAN かつ
+        cleartext 許可が必要
+      • VITE_API_BASE_URL を
+        PC の IP に書き換え
+  end note
+}
+
+@enduml

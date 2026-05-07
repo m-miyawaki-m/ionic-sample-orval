@@ -1,0 +1,73 @@
+@startuml codegen-pipeline
+title Code Generation Pipeline (`npm run gen`)
+
+!theme plain
+skinparam backgroundColor #FAFAFA
+
+start
+
+:Developer edits\n**openapi/openapi.yaml**;
+note right
+  Single Source of Truth
+  - paths (operationId)
+  - components/schemas
+  - examples
+end note
+
+:`npm run gen`\n→ Orval CLI;
+
+:Read **orval.config.ts**;
+note right
+  - input: ../openapi/openapi.yaml
+  - client: 'axios-functions'
+  - mode: 'tags-split'
+  - mock: { type: 'msw',
+           useExamples: true }
+  - mutator: { name: 'request' }
+end note
+
+:Parse OpenAPI spec;
+
+split
+
+:Generate **TypeScript types**\nsrc/api/models/*.ts;
+note right
+  Item, ItemCreate
+  + barrel index.ts
+end note
+
+split again
+
+:Generate **client functions**\nsrc/api/default/default.ts;
+note right
+  listItems()
+  getItem(id)
+  createItem(body)
+  deleteItem(id)
+  ↓ all use request<T>(...)
+end note
+
+split again
+
+:Generate **MSW handlers**\nsrc/api/default/default.msw.ts;
+note right
+  getDefaultMock()
+  → returns example arrays
+  (when useExamples: true)
+end note
+
+end split
+
+:`vue-tsc` で型チェック;
+
+if (型エラー?) then (yes)
+  :UI（views）が新仕様を\n使うよう手で修正;
+  stop
+else (no)
+endif
+
+:`npm run dev` または `npm run build`\nで反映確認;
+
+stop
+
+@enduml

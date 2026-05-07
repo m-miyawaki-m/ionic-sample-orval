@@ -1,0 +1,53 @@
+@startuml sequence-msw
+title Runtime Sequence: MSW Mode (`VITE_USE_MOCK=msw`)
+
+!theme plain
+skinparam backgroundColor #FAFAFA
+
+actor User
+participant "ListView.vue" as VIEW
+participant "default/default.ts\n(Orval generated)" as CLIENT
+participant "axios.ts\n(mutator)" as MUTATOR
+participant "Browser fetch" as FETCH
+participant "Service Worker\n(MSW)" as SW
+participant "default.msw.ts\n(Orval handlers)" as HANDLERS
+
+== Bootstrap ==
+
+User -> VIEW: ブラウザを開く
+note over VIEW: main.ts が起動
+VIEW -> SW: import('./mocks/browser')\nworker.start()
+note over SW
+  Service Worker が
+  ブラウザに登録される
+end note
+
+== ボタンタップ ==
+
+User -> VIEW: 「読み込み」をタップ
+VIEW -> CLIENT: listItems()
+CLIENT -> MUTATOR: request<Item[]>({\n  url: '/api/items',\n  method: 'GET'\n})
+MUTATOR -> FETCH: axios.get('/api/items')
+
+note over FETCH
+  リクエストは外に出る前に
+  Service Worker が横取り
+end note
+
+FETCH -> SW: intercept
+SW -> HANDLERS: 該当する handler を探す
+HANDLERS --> SW: example 値を返す\n[{ id:1, name:"ペン",...}, ...]
+SW --> FETCH: 200 OK + JSON
+FETCH --> MUTATOR: response
+MUTATOR --> CLIENT: data
+CLIENT --> VIEW: Item[]
+VIEW -> User: 商品一覧を描画\n(ペン ¥200 / ノート ¥800)
+
+note over User, HANDLERS
+  ★ ネットワークには 1 bit も出ていない
+  ★ PC オフラインでも動作する
+  ★ DevTools の Network では
+    "(from ServiceWorker)" と表示
+end note
+
+@enduml

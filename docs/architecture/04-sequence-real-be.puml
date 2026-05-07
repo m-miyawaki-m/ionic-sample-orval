@@ -1,0 +1,67 @@
+@startuml sequence-real-be
+title Runtime Sequence: Real BE Mode\n(`VITE_USE_MOCK=none`, `VITE_API_BASE_URL=http://localhost:8080`)
+
+!theme plain
+skinparam backgroundColor #FAFAFA
+
+actor User
+participant "CreateView.vue" as VIEW
+participant "default.ts\n(Orval generated)" as CLIENT
+participant "axios.ts\n(mutator)" as MUTATOR
+participant "Network\n(localhost:8080)" as NET
+participant "ItemController" as CTRL
+participant "ItemService" as SVC
+database "items: List<Item>\n(in-memory)" as DB
+
+== ボタンタップ（POST /api/items） ==
+
+User -> VIEW: 「登録」ボタンをタップ\n(name="新商品", price=300)
+VIEW -> CLIENT: createItem({ name, price })
+CLIENT -> MUTATOR: request<Item>({\n  url: '/api/items',\n  method: 'POST',\n  data: { name, price }\n})
+MUTATOR -> NET: HTTP POST localhost:8080/api/items\nContent-Type: application/json
+
+note over NET
+  CORS preflight OPTIONS が
+  先に飛ぶ場合あり
+  → CorsConfig.java で 5173 許可済み
+end note
+
+NET -> CTRL: @PostMapping  ItemController.createItem(body)
+CTRL -> SVC: service.create(itemCreate)
+SVC -> DB: items.add(new Item(nextId++, ...))
+note over SVC
+  synchronized で保護
+  AtomicLong で id 採番
+end note
+DB --> SVC: stored
+SVC --> CTRL: Item(id=1, name="新商品", price=300)
+CTRL --> NET: 201 Created\n{ id, name, price }
+NET --> MUTATOR: response
+MUTATOR --> CLIENT: Item
+CLIENT --> VIEW: Item
+VIEW -> User: router.replace('/')\n→ ListView へ遷移
+
+== 一覧画面（GET /api/items） ==
+
+User -> VIEW: ListView.onMounted
+VIEW -> CLIENT: listItems()
+CLIENT -> MUTATOR: request<Item[]>(...)
+MUTATOR -> NET: HTTP GET /api/items
+NET -> CTRL: @GetMapping  listItems()
+CTRL -> SVC: service.listAll()
+SVC -> DB: List.copyOf(items)
+DB --> SVC: [{ id:1, name:"新商品",... }]
+SVC --> CTRL: List<Item>
+CTRL --> NET: 200 OK + JSON
+NET --> MUTATOR: response
+MUTATOR --> CLIENT: data
+CLIENT --> VIEW: Item[]
+VIEW -> User: 一覧に「新商品 ¥300」が表示
+
+note over User, DB
+  ★ 永続化はインメモリ
+  ★ サーバー再起動で消える
+  ★ 永続化したいなら H2/JPA を後付け
+end note
+
+@enduml
