@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ionic Sample</string>
+    <string name="title_activity_main">Ionic Sample</string>
+    <string name="package_name">jp.co.example.sample</string>
+    <string name="custom_url_scheme">jp.co.example.sample</string>
+</resources>
