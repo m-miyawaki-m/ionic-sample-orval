@@ -1,0 +1,84 @@
+openapi: 3.0.3
+info:
+  title: Ionic Sample API
+  version: 1.0.0
+  description: Spec-First learning project. Single source of truth for FE (Orval) and BE (Spring Boot).
+
+servers:
+  - url: http://localhost:8080
+    description: Local Spring Boot
+  - url: http://localhost:4010
+    description: Local Prism mock
+
+paths:
+  /api/items:
+    get:
+      operationId: listItems
+      summary: List all items
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Item' }
+              example:
+                - { id: 1, name: "ペン", price: 200 }
+                - { id: 2, name: "ノート", price: 800 }
+    post:
+      operationId: createItem
+      summary: Create a new item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ItemCreate' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Item' }
+
+  /api/items/{id}:
+    get:
+      operationId: getItem
+      summary: Get one item by id
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Item' }
+              example: { id: 1, name: "ペン", price: 200 }
+        '404':
+          description: Not Found
+    delete:
+      operationId: deleteItem
+      summary: Delete one item
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '204':
+          description: No Content
+        '404':
+          description: Not Found
+
+components:
+  schemas:
+    Item:
+      type: object
+      required: [id, name, price]
+      properties:
+        id:    { type: integer, format: int64, example: 1 }
+        name:  { type: string,  example: "ペン" }
+        price: { type: integer, example: 200 }
+    ItemCreate:
+      type: object
+      required: [name, price]
+      properties:
+        name:  { type: string,  example: "新商品" }
+        price: { type: integer, example: 100 }
