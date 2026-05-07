@@ -356,15 +356,21 @@ cd ..\backend
 
 ### A. 静的 HTML を生成（BE 不要・オフライン可）
 
+3 種類のレンダラを生成可能：
+
 ```powershell
-.\scripts\build-api-docs.cmd
-# → docs/api-reference.html が生成される（自己完結型 1 ファイル、59 KiB 程度）
+.\scripts\build-api-docs.cmd            # Redoc       → docs/api-reference.html
+.\scripts\build-api-docs-swagger.cmd    # Swagger UI  → docs/api-reference-swagger.html
+.\scripts\build-api-docs-elements.cmd   # Elements    → docs/api-reference-elements.html
+
 start docs\api-reference.html
+start docs\api-reference-swagger.html
+start docs\api-reference-elements.html
 ```
 
-中身は **Redocly** が生成した綺麗な API リファレンス（左：エンドポイント一覧、右：型・example）。ブラウザで開けば BE もネットも不要で見られる。
+3 つの違いは [`api-viewer-comparison.md`](./api-viewer-comparison.md) に詳細スコアリング付き。**標準は Redoc**、**API を叩きたい時は Swagger UI**、**モダン UI なら Elements**。
 
-> このファイルは `.gitignore` 済。**仕様を変えたら再生成**する：`scripts\build-api-docs.cmd` をもう一度叩くだけ。
+> 全 3 ファイルとも `.gitignore` 済。**仕様を変えたら再生成**する。Redoc は CLI でファイル自己完結、Swagger UI / Elements は CDN 経由（ネット必要）。
 
 ### B. Springdoc Swagger UI（BE 起動時）
 
@@ -408,9 +414,11 @@ cd backend
 # OpenAPI 検証
 npx -y @apidevtools/swagger-cli validate openapi/openapi.yaml
 
-# API 仕様を HTML で見る
-.\scripts\build-api-docs.cmd     # docs/api-reference.html を生成
-start docs\api-reference.html    # ブラウザで開く
+# API 仕様を HTML で見る（3 種類）
+.\scripts\build-api-docs.cmd            # Redoc 版
+.\scripts\build-api-docs-swagger.cmd    # Swagger UI 版
+.\scripts\build-api-docs-elements.cmd   # Stoplight Elements 版
+start docs\api-reference.html           # 比較は docs/api-viewer-comparison.md
 ```
 
 ---

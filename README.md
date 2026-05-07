@@ -66,14 +66,15 @@ npx cap open android
 # Android Studio で Run
 ```
 
-### E. API 仕様を HTML で見る（BE 不要）
+### E. API 仕様を HTML で見る（BE 不要、3 種類のレンダラ）
 
 ```powershell
-.\scripts\build-api-docs.cmd
-start docs\api-reference.html
+.\scripts\build-api-docs.cmd            # Redoc 版（標準）
+.\scripts\build-api-docs-swagger.cmd    # Swagger UI 版（Try it out 可）
+.\scripts\build-api-docs-elements.cmd   # Stoplight Elements 版（モダン UI）
 ```
 
-`openapi/openapi.yaml` から **Redocly** が静的 HTML（59 KiB 程度）を生成。BE 起動・ネット接続不要。詳細は [`docs/getting-started.md` §9](./docs/getting-started.md) を参照。
+`openapi/openapi.yaml` から 3 種類の API リファレンス HTML を生成。スコアリング比較は [`docs/api-viewer-comparison.md`](./docs/api-viewer-comparison.md)、各ツールの詳細は [`docs/getting-started.md` §9](./docs/getting-started.md) を参照。
 
 ## OpenAPI 仕様の編集フロー
 
