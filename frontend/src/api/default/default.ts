@@ -5,8 +5,6 @@
  * Spec-First learning project. Single source of truth for FE (Orval) and BE (Spring Boot).
  * OpenAPI spec version: 1.0.0
  */
-import axios from 'axios';
-
 import type {
   Item,
   ItemCreate
