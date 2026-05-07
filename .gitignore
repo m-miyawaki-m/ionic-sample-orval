@@ -1,0 +1,40 @@
+# Node
+node_modules/
+dist/
+*.log
+
+# Maven
+target/
+.mvn/
+mvnw
+mvnw.cmd
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Capacitor / Android
+frontend/android/.gradle/
+frontend/android/app/build/
+frontend/android/build/
+frontend/android/local.properties
+frontend/android/.idea/
+frontend/android/app/release/
+frontend/android/captures/
+
+# MSW
+public/mockServiceWorker.js.bak
+
+# Env (local overrides only)
+.env.local
+.env.*.local
+
+# Coverage / Cypress
+coverage/
+cypress/videos/
+cypress/screenshots/
