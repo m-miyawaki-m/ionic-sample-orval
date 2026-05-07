@@ -5,9 +5,6 @@ dist/
 
 # Maven
 target/
-.mvn/
-mvnw
-mvnw.cmd
 
 # IDE
 .vscode/
