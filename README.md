@@ -66,6 +66,15 @@ npx cap open android
 # Android Studio で Run
 ```
 
+### E. API 仕様を HTML で見る（BE 不要）
+
+```powershell
+.\scripts\build-api-docs.cmd
+start docs\api-reference.html
+```
+
+`openapi/openapi.yaml` から **Redocly** が静的 HTML（59 KiB 程度）を生成。BE 起動・ネット接続不要。詳細は [`docs/getting-started.md` §9](./docs/getting-started.md) を参照。
+
 ## OpenAPI 仕様の編集フロー
 
 1. `openapi/openapi.yaml` を編集

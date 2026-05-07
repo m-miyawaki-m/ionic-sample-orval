@@ -350,7 +350,39 @@ cd ..\backend
 
 ---
 
-## 9. よく使うコマンド早見表
+## 9. API 仕様を HTML で見る
+
+`openapi.yaml` を **画面付きの API リファレンス HTML** として閲覧する3つの方法。
+
+### A. 静的 HTML を生成（BE 不要・オフライン可）
+
+```powershell
+.\scripts\build-api-docs.cmd
+# → docs/api-reference.html が生成される（自己完結型 1 ファイル、59 KiB 程度）
+start docs\api-reference.html
+```
+
+中身は **Redocly** が生成した綺麗な API リファレンス（左：エンドポイント一覧、右：型・example）。ブラウザで開けば BE もネットも不要で見られる。
+
+> このファイルは `.gitignore` 済。**仕様を変えたら再生成**する：`scripts\build-api-docs.cmd` をもう一度叩くだけ。
+
+### B. Springdoc Swagger UI（BE 起動時）
+
+```powershell
+cd backend
+.\mvnw.cmd spring-boot:run
+# → http://localhost:8080/swagger-ui.html
+```
+
+「Try it out」ボタンで実 API を叩ける。**ただし BE が動いていないと見えない**。
+
+### C. VS Code 拡張で yaml プレビュー
+
+拡張機能 `Swagger Viewer` (`Arjun.swagger-viewer`) をインストール → `openapi/openapi.yaml` を開いて `Shift+Alt+P`。
+
+---
+
+## 10. よく使うコマンド早見表
 
 ```powershell
 # フロント
@@ -375,11 +407,15 @@ cd backend
 
 # OpenAPI 検証
 npx -y @apidevtools/swagger-cli validate openapi/openapi.yaml
+
+# API 仕様を HTML で見る
+.\scripts\build-api-docs.cmd     # docs/api-reference.html を生成
+start docs\api-reference.html    # ブラウザで開く
 ```
 
 ---
 
-## 10. ドキュメント一覧
+## 11. ドキュメント一覧
 
 | ファイル | 内容 |
 |---------|------|
