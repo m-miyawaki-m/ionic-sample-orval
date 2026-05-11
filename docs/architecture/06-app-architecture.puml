@@ -1,0 +1,132 @@
+@startuml app-architecture
+title ionic-sample-orval — App Architecture\n(Android-style layered view, full-stack)
+
+!theme plain
+skinparam componentStyle rectangle
+skinparam backgroundColor #FAFAFA
+skinparam padding 6
+skinparam roundCorner 8
+skinparam ArrowColor #555
+skinparam shadowing false
+
+skinparam package {
+  BackgroundColor<<UI>>       #BBDEFB
+  BackgroundColor<<Domain>>   #C8E6C9
+  BackgroundColor<<Data>>     #FFE0B2
+  BackgroundColor<<Contract>> #FFF59D
+}
+
+' ===========================
+' FRONTEND  (Ionic Vue + Capacitor)
+' ===========================
+package "Frontend  ( Ionic Vue + Capacitor )" as FE {
+
+  package "UI Layer\n— 画面表示 / ユーザー入力 / 画面状態" <<UI>> as FE_UI {
+    package "UI elements\n(views/*.vue, Ionic Components)" as FE_UIE {
+      [ListView.vue]
+      [DetailView.vue]
+      [CreateView.vue]
+    }
+    package "State holders\n(Vue reactivity)" as FE_STATE {
+      [ref / reactive\n(component scope)]
+    }
+    [vue-router\n(src/router/)] as FE_ROUTER
+  }
+
+  package "Domain Layer\n— 業務ロジック ( optional / 未実装 )" <<Domain>> as FE_DOMAIN {
+    [Use cases / composables\n→ future: src/composables/] as FE_UC
+  }
+
+  package "Data Layer\n— 通信 / 永続化 / モデル" <<Data>> as FE_DATA {
+    package "Repositories\n( 未抽象化: UI が直接呼出 )" as FE_REPO {
+      [Repository wrappers\n→ future: src/repositories/] as FE_REPO_FUT
+    }
+    package "Data sources" as FE_DS {
+      [default.ts\n(orval 生成: axios functions)] as FE_CLIENT
+      [axios.ts\n(mutator: baseURL/cancel)] as FE_MUT
+      [handlers.ts + default.msw.ts\n(MSW: ローカル mock)] as FE_MSW
+    }
+    [models/*.ts\n(orval 生成: TS interface)] as FE_MODELS
+  }
+}
+
+' ===========================
+' API CONTRACT  (Spec-First Single Source of Truth)
+' ===========================
+package "API Contract  ( Spec-First SSoT )" <<Contract>> as CONTRACT {
+  [openapi/openapi.yaml] as YAML
+}
+
+' ===========================
+' BACKEND  (Spring Boot)
+' ===========================
+package "Backend  ( Spring Boot )" as BE {
+
+  package "Presentation Layer\n— HTTP I/O / 認可 / CORS" <<UI>> as BE_UI {
+    [ItemController]
+    [CorsConfig]
+  }
+
+  package "Domain Layer\n— 業務ロジック" <<Domain>> as BE_DOMAIN {
+    [ItemService\n(business logic\n+ in-memory store)]
+  }
+
+  package "Data Layer\n— 永続化 ( 未分離: Service に同居 )" <<Data>> as BE_DATA {
+    [Repository / DB\n→ future] as BE_REPO
+  }
+
+  [Item.java\nItemCreate.java\n(records: DTO)] as BE_DTO
+}
+
+' --- Frontend: 層内・層間フロー ---
+FE_UIE --> FE_STATE       : reads / mutates
+FE_UIE --> FE_ROUTER      : navigate
+FE_UIE ..> FE_UC          : (future) call use case
+FE_UC  ..> FE_REPO_FUT    : (future) call repo
+FE_UIE --> FE_CLIENT      : 現状は直接呼出
+FE_REPO_FUT ..> FE_CLIENT : (future) wraps
+FE_CLIENT --> FE_MUT      : request<T>(config)
+FE_CLIENT ..> FE_MODELS   : import types
+FE_MUT  ..> FE_MSW        : MSW mode\n(Service Worker 経由)
+
+' --- Contract から自動生成（FE側） ---
+YAML ..> FE_CLIENT : orval generates
+YAML ..> FE_MSW    : orval generates
+YAML ..> FE_MODELS : orval generates
+
+' --- Backend: 層内・層間フロー ---
+BE_UI     --> BE_DOMAIN : delegate
+BE_DOMAIN ..> BE_REPO   : (future) persist
+BE_UI     ..> BE_DTO    : I/O 型
+BE_DOMAIN ..> BE_DTO
+
+' --- Contract から手動参照（BE側） ---
+YAML ..> BE_UI : 手動実装の参照\n(Springdoc は逆向きに\nコードから再エクスポート)
+
+' --- Runtime HTTP（FE Data → BE Presentation） ---
+FE_MUT ..> BE_UI : HTTP\n(real BE mode)
+
+' --- 凡例 ---
+legend bottom
+|<#BBDEFB>     | **UI Layer** ( 画面 / Controller ) |
+|<#C8E6C9>     | **Domain Layer** ( 業務ロジック / use case ) |
+|<#FFE0B2>     | **Data Layer** ( 通信 / 永続化 / モデル ) |
+|<#FFF59D>     | **Contract** ( OpenAPI 仕様 ) |
+| --> | 現状の依存 |
+| ..> | 将来 or 補助的な依存・自動生成 |
+endlegend
+
+' --- 設計原則メモ（Android Architecture 由来） ---
+note right of FE_UI
+  **Android Architecture 由来の原則**
+  ・**Separation of concerns**:
+    UI は表示専用、業務は Domain、I/O は Data
+  ・**Drive UI from data models**:
+    画面状態は data source 由来の不変モデルから
+  ・**Single Source of Truth**:
+    各データの真実は 1 箇所 ( 例: openapi.yaml )
+  ・**Unidirectional Data Flow**:
+    イベントは上へ、状態は下へ流す
+end note
+
+@enduml

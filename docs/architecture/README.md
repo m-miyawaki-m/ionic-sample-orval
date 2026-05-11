@@ -11,6 +11,7 @@ PlantUML 形式のアーキテクチャ図一式。
 | [`03-sequence-msw.puml`](./03-sequence-msw.puml) | MSW モードでボタン押下時に何が起きるか | フロント開発者 |
 | [`04-sequence-real-be.puml`](./04-sequence-real-be.puml) | 実 BE モードでボタン押下時に何が起きるか | フロント+BE 開発者 |
 | [`05-deployment-modes.puml`](./05-deployment-modes.puml) | 4 つの運用モード（MSW/実BE/Prism/Android）の差分 | DevOps・運用担当 |
+| [`06-app-architecture.puml`](./06-app-architecture.puml) | Android アーキテクチャ参考のレイヤー責務図（UI / Domain / Data）を FE+BE フルスタックで | アプリ設計者 |
 
 ## 表示方法
 
