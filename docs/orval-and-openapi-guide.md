@@ -4,6 +4,8 @@
 
 > このプロジェクトは **Spec-First**（OpenAPI を真実の源として、フロント・バックエンドが両方そこから派生する）。
 
+> 「そもそも OpenAPI / Swagger / Orval / zod とは何で、どう関係しているか」を先に知りたい場合は [`openapi-orval-overview.md`](./openapi-orval-overview.md) を参照。
+
 ---
 
 ## 1. 全体像
