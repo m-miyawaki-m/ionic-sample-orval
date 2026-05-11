@@ -4,7 +4,7 @@ cd /d %~dp0..
 echo Building static API reference HTML from openapi/openapi.yaml...
 echo Output: docs/api-reference.html
 echo.
-npx -y @redocly/cli build-docs openapi/openapi.yaml -o docs/api-reference.html
+node scripts\_build-html.js redoc
 if errorlevel 1 (
   echo.
   echo Build failed.

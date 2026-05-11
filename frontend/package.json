@@ -29,6 +29,9 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^10.4.0",
+    "@redocly/cli": "^1.34.0",
+    "@stoplight/elements": "^8.0.0",
+    "@stoplight/prism-cli": "^5.14.2",
     "@vitejs/plugin-legacy": "^5.0.0",
     "@vitejs/plugin-vue": "^4.0.0",
     "@vue/eslint-config-typescript": "^12.0.0",
@@ -39,6 +42,8 @@
     "jsdom": "^22.1.0",
     "msw": "^2.14.4",
     "orval": "^8.9.1",
+    "redoc": "^2.5.0",
+    "swagger-ui-dist": "^5.17.0",
     "terser": "^5.4.0",
     "typescript": "~5.9.0",
     "vite": "^5.0.0",

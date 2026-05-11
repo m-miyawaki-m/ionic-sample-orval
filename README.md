@@ -28,6 +28,8 @@ npm run dev
 
 ブラウザ `http://localhost:5173`。`/api/*` は Service Worker で完結。
 
+> 一括起動: `.\scripts\start-dev-msw.cmd`（FE のみ、MSW モード固定で起動）。
+
 ### B. バックエンドも繋ぐ（実 BE モード）
 
 ターミナル A:
@@ -49,12 +51,16 @@ npm run dev
 
 Swagger UI: `http://localhost:8080/swagger-ui.html`
 
+> 一括起動: `.\scripts\start-dev.cmd`（BE と FE を別ウィンドウで同時起動。FE 側の `VITE_USE_MOCK=none` / `VITE_API_BASE_URL=http://localhost:8080` はスクリプト内で自動設定するので `.env.development` の編集は不要）。
+
 ### C. Prism モックサーバー（外部ツールから叩く / 実機検証）
 
 ```powershell
 .\scripts\start-mock-prism.cmd
 # → http://localhost:4010 で待受
 ```
+
+> FE と一緒に立ち上げたい場合は `.\scripts\start-dev-prism.cmd`（Prism と FE を別ウィンドウで同時起動。FE 側は Prism を向くよう env を自動設定）。
 
 ### D. Android 実機 / エミュレータ
 
@@ -74,7 +80,7 @@ npx cap open android
 .\scripts\build-api-docs-elements.cmd   # Stoplight Elements 版（モダン UI）
 ```
 
-`openapi/openapi.yaml` から 3 種類の API リファレンス HTML を生成。スコアリング比較は [`docs/api-viewer-comparison.md`](./docs/api-viewer-comparison.md)、各ツールの詳細は [`docs/getting-started.md` §9](./docs/getting-started.md) を参照。
+`openapi/openapi.yaml` から 3 種類の API リファレンス HTML を生成。資材は `frontend/node_modules` から `docs/vendor/` へコピーされるので、初回 `cd frontend && npm install` 済みであれば以降の生成・閲覧はオフラインで完結。スコアリング比較は [`docs/api-viewer-comparison.md`](./docs/api-viewer-comparison.md)、各ツールの詳細は [`docs/getting-started.md` §9](./docs/getting-started.md) を参照。
 
 ## OpenAPI 仕様の編集フロー
 

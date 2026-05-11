@@ -41,3 +41,7 @@ cypress/screenshots/
 docs/api-reference.html
 docs/api-reference-swagger.html
 docs/api-reference-elements.html
+docs/vendor/
+
+# Claude Code local settings
+.claude/settings.local.json
