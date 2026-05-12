@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
 
 android {
     namespace "jp.co.example.sample"
@@ -22,6 +23,12 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    // Java/Kotlin target are aligned with capacitor.build.gradle (currently Java 17).
+    // If Capacitor regenerates capacitor.build.gradle to a different version, update jvmTarget to match.
+    kotlinOptions {
+        jvmTarget = '17'
+    }
 }
 
 repositories {
@@ -32,6 +39,8 @@ repositories {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation files('libs/demo-sdk-release.aar')
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
@@ -43,6 +52,16 @@ dependencies {
 }
 
 apply from: 'capacitor.build.gradle'
+
+// Ensure the demo-sdk AAR is built and copied into libs/ before the app compiles.
+// Without this, `assembleDebug` would fail when libs/demo-sdk-release.aar is absent.
+afterEvaluate {
+    if (tasks.findByName('preBuild') != null) {
+        tasks.named('preBuild').configure {
+            dependsOn ':demo-sdk:copyAarToApp'
+        }
+    }
+}
 
 try {
     def servicesJSON = file('google-services.json')

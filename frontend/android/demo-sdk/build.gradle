@@ -1,0 +1,41 @@
+apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.android'
+
+android {
+    namespace 'jp.co.example.demosdk'
+    compileSdkVersion rootProject.ext.compileSdkVersion
+
+    defaultConfig {
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    // Match the app's Java target (Capacitor sets this to 17 via capacitor.build.gradle).
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+}
+
+dependencies {
+    implementation "androidx.core:core-ktx:$androidxCoreKtxVersion"
+    testImplementation "junit:junit:$junitVersion"
+}
+
+// AAR を生成して app/libs/ に配置するタスク。
+// Usage: ./gradlew :demo-sdk:copyAarToApp
+task copyAarToApp(type: Copy) {
+    dependsOn 'assembleRelease'
+    from "${buildDir}/outputs/aar/demo-sdk-release.aar"
+    into "${project(':app').projectDir}/libs/"
+}
