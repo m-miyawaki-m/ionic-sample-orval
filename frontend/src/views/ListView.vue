@@ -4,6 +4,7 @@
       <ion-toolbar>
         <ion-title>商品一覧</ion-title>
         <ion-buttons slot="end">
+          <ion-button @click="goBridgeDemo">Bridge</ion-button>
           <ion-button @click="goCreate">追加</ion-button>
         </ion-buttons>
       </ion-toolbar>
@@ -49,4 +50,5 @@ onMounted(async () => {
 
 const goDetail = (id: number) => router.push({ name: 'detail', params: { id } })
 const goCreate = () => router.push({ name: 'create' })
+const goBridgeDemo = () => router.push({ name: 'bridge-demo' })
 </script>
