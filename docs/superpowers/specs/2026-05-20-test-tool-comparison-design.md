@@ -426,17 +426,53 @@ WebdriverIO は比較サンプル枠外（採点のみ）。
 
 ### 2.8 エビデンス: Vitest HTML / Cypress mochawesome / Gradle HTML / Espresso screenrecord
 
+本節は単独カテゴリ内で「Vitest HTML / Cypress mochawesome / Gradle HTML / Espresso screenrecord」の **4 要素複合採用**を扱う特殊節。親戦略書 §5.1 のエビデンス表で 1 行ずつ列挙されている採用品群を**1 候補としてまとめ**、不採用候補「Cypress 動画録画（`video: false` で既存無効化）」と 2 候補比較する（比較サンプル列は `—`）。複合採用の補完関係は §2.8.2 で示す。
+
 #### 2.8.1 採点表
 
-`(後続 plan で埋める。「Cypress 動画録画（不採用）」を比較対象に含めること)`
+| 軸 | 採用品セット（Vitest HTML / mochawesome / Gradle HTML / Espresso screenrecord） | 根拠 | Cypress 動画録画 | 根拠 |
+|---|---|---|---|---|
+| L1 学習コスト | 4 | Vitest は `vite.config.ts` の `reporters: ['default','html','junit']` 3 語 + `outputFile` 指定で完結、Cypress は `cypress-multi-reporters` + `mochawesome` + `mocha-junit-reporter` の組合せ、Gradle は標準で出力、Espresso `screenrecord` は手順書ベース。要素が 4 つあるため一通り把握するコストはあるが、各要素単体は 1 ファイル設定で済む（既存 `frontend/vite.config.ts` + `frontend/cypress.config.ts` + 親戦略書 §5.4） | 5 | `cypress.config.ts` で `video: true` の 1 行設定のみ。Cypress 既定機能で `videosFolder` も既定値あり、追加 dep 不要（公式 docs.cypress.io/guides/guides/screenshots-and-videos + 既存 `frontend/cypress.config.ts`） |
+| L2 ドキュメント | 4 | Vitest 公式 reporters / Mochawesome README（adamgruber/mochawesome）/ Gradle Testing user guide / Android Developers `screenrecord` どれも 1st-party ドキュメントが揃う。日本語記事も Vitest / Mochawesome 中心に蓄積（公式 + 体感） | 4 | Cypress 公式 guide「Screenshots and Videos」が章立てで揃い、`videoCompression` / `videosFolder` / `trashAssetsBeforeRuns` などのオプションも明文化。日本語記事も豊富（公式 docs.cypress.io） |
+| L3 既存親和性 | 5 | **既に全要素が設定済み**: `frontend/vite.config.ts` で `reporters: ['default','html','junit']` + `outputFile` 設定済、`frontend/cypress.config.ts` で `cypress-multi-reporters` + `mochawesome` + `mocha-junit-reporter` 設定済、`frontend/android/demo-sdk/build.gradle` の Gradle HTML レポートは標準出力、Espresso `screenrecord` は親戦略書 §5.1 で手順書枠として位置付け済み（既存コード + 親戦略書 §5.1） | 2 | **既存方針と不整合**: `frontend/cypress.config.ts` で `video: false` が明示的に設定されており、親戦略書 §5.1 で「動画 = 無効化」と明文化済み。有効化するには既存の設定変更が必要で、§5.2「PR レビュー: 失敗時のスクショ + JUnit XML が必須、HTML レポートは任意」という保存方針とも齟齬（既存コード + 親戦略書 §5.1 / §5.2） |
+| L4 デバッグ体験 | 4 | スクショ（Cypress 失敗時自動 + Espresso `additional_output/*.png`）+ HTML（Vitest / Mochawesome / Gradle テストレポート）+ JUnit XML（CI 集約用）の 3 点セットで失敗時の文脈が読める。Mochawesome は失敗テストに展開済みのスタックトレース + 任意スクショの埋め込みが効き、Vitest HTML は test tree のドリルダウンが可能（親戦略書 §5.1 + 体感） | 3 | 動画は実行全体の流れが見えるためフレーキー E2E の原因特定には有用だが、PR レビューで再生（30s〜数分）するには時間コストが高く、頭出しが面倒。失敗時点の 1 フレームを見たいだけなら Cypress 標準の失敗時スクショ（既存有効）で十分で、動画は付加価値が薄れる（公式 + 体感） |
+| L5 VSCode 統合 | 4 | Vitest HTML / Mochawesome HTML / Gradle HTML は VSCode の Live Preview 拡張または「Open in Browser」拡張で直接開ける、JUnit XML は `vscjava.vscode-java-test` / Vitest Explorer 拡張でツリー表示可能（親戦略書 §3.1 / §5.2 + 体感） | 3 | MP4 を VSCode 内で再生する標準的な手段はなく、外部プレイヤー（Windows Media Player / VLC）に渡す必要がある。VSCode 完結方針（親戦略書 §3.1）と齟齬がある（体感） |
+| L6 保守性 | 4 | 各レポータは独立した dep（`html`/`junit` は Vitest 同梱、`mochawesome` / `cypress-multi-reporters` は固定バージョン、Gradle / Espresso は AGP に追従）で、1 つが壊れても他のエビデンスは出続ける**冗長性**がある。Mochawesome は active メンテで月次〜四半期マイナー（公式 GitHub releases） | 3 | Cypress 標準機能のため Cypress 本体のメジャー追従に乗れば壊れにくい。ただし `videoCompression` 仕様変更や FFmpeg 関連の互換性問題（過去に Linux CI で再現したケースあり）は発生し得る。MP4 のため artifact 保持期間切れで遡及不可能になりやすい（公式 + 体感） |
+| L7 実行速度 | 5 | 全要素がファイル書き出しのみで CPU / I/O 負荷は軽微。Vitest HTML 生成は数百 ms オーダー、Mochawesome JSON → HTML は spec 1 本あたり 100ms 未満、Gradle HTML は標準 Test タスクに同梱で追加コストなし、Espresso `screenrecord` は手動実行で CI 自動コスト 0（体感 + 公式） | 2 | **録画コスト大**: Cypress 公式ドキュメントでも「video recording can significantly slow down test runs」と明記、CI で 1 spec あたり数十秒〜分の増加が発生（特に Linux CI の FFmpeg encoding コスト）。CI 全体実行時間と artifact upload 時間の両方を押し上げる（公式 + 体感） |
+| L8 エコシステム | 5 | JUnit XML は GitHub Actions / GitLab CI / CircleCI / Jenkins 全てが test summary annotation に対応、Mochawesome HTML / Vitest HTML / Gradle HTML は静的サイト化が容易で artifact 公開も簡単、Espresso screenrecord は Firebase Test Lab / Sauce Labs などのクラウド実行サービスでも標準取得。**PR レビュー実用度**: 静的 HTML + PNG + XML はブラウザ / VSCode で即座に開けて頭出し不要、レビュアーの認知コストが低い（親戦略書 §5.1 / §5.2 + 公式） | 3 | 動画は Cypress 標準でクラウド連携（Cypress Cloud）も整備されているが、**PR レビュー実用度が低い**: MP4 は再生プレイヤー起動 → シーク → 失敗箇所頭出しの 3 ステップが要り、レビュアーが 5 spec 分の動画を捌くコストは静的スクショ比で 5-10 倍。artifact サイズも 1 spec あたり 5-30MB で、GitHub Actions の `upload-artifact` の保持期間（既定 90 日）と容量上限（500MB/job）を圧迫しやすい（公式 + 親戦略書 §5.2 + 体感） |
+| **総合（加重平均）** | **4.35** | — | **3.20** | — |
+
+> 計算例 (採用品セット): 分子 = 4×1.5 + 4×1.5 + 5×1.5 + 4×1.2 + 4×1.2 + 4×1.0 + 5×1.0 + 5×1.0 = 6.0 + 6.0 + 7.5 + 4.8 + 4.8 + 4.0 + 5.0 + 5.0 = **43.1**、分母 = 1.5×3 + 1.2×2 + 1.0×3 = **9.9**、43.1 / 9.9 ≈ **4.35**（判定: 良好）
+> 計算例 (Cypress 動画録画): 分子 = 5×1.5 + 4×1.5 + 2×1.5 + 3×1.2 + 3×1.2 + 3×1.0 + 2×1.0 + 3×1.0 = 7.5 + 6.0 + 3.0 + 3.6 + 3.6 + 3.0 + 2.0 + 3.0 = **31.7**、分母 = **9.9**、31.7 / 9.9 ≈ **3.20**（判定: 要注意）
+
+> ※ 上の総合スコア（4.35 / 3.20）は「公式 docs（Vitest reporters / Cypress Screenshots and Videos / Mochawesome README / Android Developers screenrecord）+ 既存 `frontend/vite.config.ts` / `frontend/cypress.config.ts` + 親戦略書 §5.1 / §5.2 / §5.4 + 体感」を根拠とする暫定値。採用品セットは 4 要素の複合採用で単一値に丸めているため、要素ごとの単独スコアは取らない（親戦略書 §5.1 で 1 行ずつ独立して列挙されているため、本書では「採用済みエビデンス stack 全体」を 1 候補として扱う）。動画録画は L1 / L2 が高得点でも、L3 既存親和性（2）と L7 実行速度（2）と L8 PR レビュー実用度（3）に引きずられ「要注意」帯に落ちた。
 
 #### 2.8.2 採否解説
 
-`(後続 plan で埋める。L8 エコシステムは「PR レビュー実用度」を根拠に含める)`
+- **合意点**: 両者とも CI artifact として `upload-artifact` 経由で配布可能であり、失敗時の状況再現に役立つ「実行記録」を提供する。どちらも実行時にファイルを書き出すパッシブな仕組みで、テストコード本体には侵入しない（テスト失敗 → 自動でアーティファクト生成）点も共通。親戦略書 §5.2「CI（将来）: GitHub Actions の `upload-artifact` で 14 日保持」の方針はどちらにも適用可能で、PR レビュー時の「何が失敗したか」の情報源として候補に挙がる
+- **差分** (L# 明示):
+  - **L3 既存親和性**: 採用品セット（5）は `frontend/vite.config.ts` の `reporters: ['default','html','junit']` + `outputFile` 指定、`frontend/cypress.config.ts` の `cypress-multi-reporters` + `mochawesome` + `mocha-junit-reporter` 設定、`frontend/android/demo-sdk/build.gradle` 標準 HTML 出力が**全て設定済み**で追加作業ゼロ。一方、Cypress 動画録画（2）は `frontend/cypress.config.ts` で `video: false` が明示設定されており、有効化には既存方針の変更が必要。親戦略書 §5.1 でも「動画 = 無効化」と明記されているため、復帰には親戦略書も同時更新が要る
+  - **L7 実行速度**: 採用品セット（5）はファイル書き出しのみで負荷ほぼゼロ、Vitest HTML 数百 ms / Mochawesome 100ms 未満 / Gradle HTML 追加コスト 0。Cypress 動画録画（2）は FFmpeg encoding のコストが支配的で、Cypress 公式も「video recording can significantly slow down test runs」と注意喚起、CI で 1 spec あたり数十秒〜分の増加。学習サンプル集として spec を増やすほど不利が拡大
+  - **L4 デバッグ体験**: 採用品セット（4）はスクショ + HTML + JUnit XML の 3 点セットで失敗時点の文脈が静的に読める。Cypress 動画録画（3）は実行全体の流れが見えるためフレーキー E2E のデバッグには有用だが、失敗時の 1 フレームを見たいだけなら既存の失敗時スクショ（`screenshotOnRunFailure: true`）で代替可能で、動画の付加価値が薄れる
+  - **L8 エコシステム（PR レビュー実用度）**: 採用品セット（5）は静的 HTML + PNG + XML を VSCode / ブラウザで**即座に開いて頭出し不要**で確認できる。Cypress 動画録画（3）は MP4 のため (1) 再生プレイヤー起動、(2) シーク、(3) 失敗箇所頭出し、の 3 ステップが必要で、5 spec 分の動画を捌くレビュアーの認知コストは静的スクショ比で 5-10 倍。さらに artifact サイズが 1 spec あたり 5-30MB と大きく、GitHub Actions の保持期間（既定 90 日）と容量上限（500MB/job）を圧迫しやすい
+  - **L5 VSCode 統合**: 採用品セット（4）の HTML レポートは VSCode の Live Preview / Open in Browser 拡張で直接開ける（親戦略書 §3.1 の VSCode 完結方針と整合）。Cypress 動画録画（3）の MP4 は VSCode 内で再生できず、外部プレイヤーに渡す必要があり方針と齟齬
+  - **L6 保守性**: 採用品セット（4）は 4 要素が独立 dep のため**冗長性**があり、1 つが壊れても他のエビデンスは出続ける。Cypress 動画録画（3）は Cypress 本体に密結合で、過去 Linux CI での FFmpeg 互換性問題実績あり。MP4 は保持期間切れで遡及不可能になりやすい点も保守性を下げる
+- **本プロジェクトでの選択理由**: 親戦略書 §1 / §5.1 で採用品セット 4 要素を採用、§5.1「動画 = 無効化」「`video: false` を `cypress.config.ts` に設定」と明文化済みの不採用方針に沿う。客観評価では採用品セット 4.35（良好）/ Cypress 動画録画 3.20（要注意）と差が出たが、本プロジェクトでは特に以下 3 点が決定的:
+  - (1) **学習サンプル集としての適合性**: 学習者 / レビュアーが PR を捌くときに静的 HTML + PNG が「即座に開けて頭出し不要」である経路（採用品セットの L8 / L5）を優先。動画は 1 spec あたり数十秒〜分の再生コストが学習サンプル集の運用と相性が悪い
+  - (2) **既存方針との整合**: `frontend/cypress.config.ts` の `video: false` と親戦略書 §5.1「動画 = 無効化」が既に確立されており、復帰には親戦略書も同時更新が要る不可逆コストが発生する（L3 既存親和性 2 の根拠）
+  - (3) **artifact サイズと CI コスト**: 動画録画は 1 spec あたり 5-30MB、5-10 spec 蓄積で 50-300MB に到達し、GitHub Actions `upload-artifact` の 500MB/job 上限を圧迫しやすい（L8 根拠）。学習サンプル集として spec を増やしていく方針（親戦略書 §4 各層の章立て）と不整合
+  - 加えて採用品セット 4 要素の複合は、Vitest HTML（単体テスト失敗の test tree 追跡）/ Mochawesome HTML（E2E 失敗の任意スクショ付きレポート）/ Gradle HTML（AAR ロジックテストの標準出力）/ Espresso screenrecord（実機ブリッジ往復の MP4 手順書枠）でテスト層ごとに役割が分かれており、**動画録画なしでも各層のエビデンス需要は十分に満たせる**
+- **学習者向けメモ**:
+  - **動画録画を有効化すべきケース**:
+    - **フレーキー E2E のデバッグ**: テストが「たまに失敗する」状況で、失敗時のスクショ 1 枚では原因特定が困難なとき。`frontend/cypress.config.ts` の `video: true` + `videoCompression: 32` などを一時的に有効化し、当該 spec 限定で `cy.task('log', ...)` と組み合わせて解析する。問題解決後は `video: false` に戻すのが基本
+    - **CI 動画再生環境が整っている組織**: 専用 video player 連携や CI dashboard（Cypress Cloud / Allure など）が組織標準で整備済みで、PR レビュアーが動画を当然のコストとして許容する文化があるとき。本プロジェクトのような学習サンプル集ではなく、本番アプリ E2E スイートで「ユーザストーリーごとに動画証跡を残す」運用に向く
+    - **回帰テストの「動く証拠」が要件**: コンプライアンス / QA 監査の文脈で「テストが本当に画面操作したことを動画で残す」必要があるとき。本プロジェクトはこの要件を持たない
+  - **採用品セットを使う場面**: 上記の特殊条件がない大半のケースは採用品セットで十分。VSCode で Vitest HTML / Mochawesome HTML / Gradle HTML を直接開き、失敗時の test tree → スタックトレース → 添付スクショの順にドリルダウンする学習体験がそのまま得られる
+  - **動画録画を「足す」か「置き換える」か**: 上記特殊条件が出ても、動画録画は採用品セットに**追加**する形が推奨。動画 1 種で全エビデンスを賄うのではなく、静的レポートの上に動画を載せると PR レビュー実用度（L8）を保ったまま動画の利点を享受できる
 
 #### 2.8.3 プロトタイプ設計
 
-該当なし。
+該当なし（採用品 4 要素は親戦略書 §5.1 / §5.4 に設定例が確定済み、不採用候補の Cypress 動画録画は `video: false` で既存無効化されており別実装の spec を作る対象がないため）。採否は §2.8.2 まで。
 
 ### 2.9 設計書連係（API）: OpenAPI examples 拡張 vs 独立 YAML/JSON データシート
 
