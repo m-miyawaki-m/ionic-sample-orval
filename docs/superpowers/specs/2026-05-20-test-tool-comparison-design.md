@@ -214,15 +214,37 @@ weighted_score = Σ(score_i × weight_i) / Σ(weight_i where score_i ≠ NA)
 
 #### 2.3.1 採点表
 
-`(後続 plan で埋める)`
+| 軸 | jsdom | 根拠 | happy-dom | 根拠 |
+|---|---|---|---|---|
+| L1 学習コスト | 5 | Vitest デフォルトの `environment: 'jsdom'` 1 行で導入完了。新概念ゼロ（既存 `frontend/vite.config.ts` でも適用済み） | 4 | `environment: 'happy-dom'` への切替自体は易しいが、jsdom にしかない API を踏んだ際の差分把握が要る（公式 Wiki + 体感） |
+| L2 ドキュメント | 5 | 10 年超の蓄積で StackOverflow 解答・日本語記事ともに豊富。公式 README + 328 リリースのチェンジログ（GitHub） | 3 | 公式 Wiki と GitHub Discussion が主、日本語記事は jsdom より少ない（公式 + 体感） |
+| L3 既存親和性 | 5 | 既存 devDep に `jsdom ^22.1.0`、Vitest 設定で `environment: 'jsdom'`。Ionic Web Components / Shadow DOM を含む Vue 描画で実績多数（既存コード） | 3 | 別 dep 追加 + 設定差し替えが要る。親戦略書 §1.1 のとおり Ionic / Vue 描画で jsdom より不安定なケースが報告されている（GitHub Issues + 体感） |
+| L4 デバッグ体験 | 4 | DOM API のエラー出力が仕様に近く、Shadow DOM の挙動も標準準拠で読み解きやすい（公式 + 体感） | 3 | 速度優先でエッジケース実装を省くため、未実装 API を踏むと "is not a function" 等で失敗位置が分かりにくい（GitHub Discussion #1438 + 体感） |
+| L5 VSCode 統合 | 4 | DOM 環境自体に VSCode 拡張はなく、Vitest Explorer 経由で Run/Debug 完備（体感） | 4 | 同上。Vitest 拡張が環境名を吸収するため jsdom と同点（体感） |
+| L6 保守性 | 5 | 2026/04 に v29 系をリリース、328 リリースの実績で月次マイナー級の追従（GitHub releases） | 4 | 活発に更新され Vitest 公式が「将来のデフォルト候補」として言及するほどだが、メジャー破壊が jsdom より頻繁（GitHub releases） |
+| L7 実行速度 | 3 | 完全実装のオーバーヘッドで happy-dom 比 2-4 倍遅い（公開ベンチ: pkgpulse 2026 / Vitest Discussion #1607） | 5 | 公開ベンチで jsdom 比 2-4x、シナリオによっては 5-10x の高速性。Vitest Discussion #1607 でも採用理由のトップ |
+| L8 エコシステム | 5 | Vue / React / Jest / Vitest など主要テストツール群のデフォルト DOM 環境。`canvas` / `tough-cookie` 等の周辺 dep も成熟（公式） | 4 | Vitest / Bun / Lit Element と直接統合、レポータは Vitest 側に依存。新興だが採用例は急増中（公式 + 体感） |
+| **総合（加重平均）** | **4.56** | — | **3.68** | — |
+
+> 計算例 (jsdom): 分子 = 5×1.5 + 5×1.5 + 5×1.5 + 4×1.2 + 4×1.2 + 5×1.0 + 3×1.0 + 5×1.0 = 7.5 + 7.5 + 7.5 + 4.8 + 4.8 + 5.0 + 3.0 + 5.0 = **45.1**、分母 = 1.5×3 + 1.2×2 + 1.0×3 = **9.9**、45.1 / 9.9 ≈ **4.56**（判定: 優秀）
+> 計算例 (happy-dom): 分子 = 4×1.5 + 3×1.5 + 3×1.5 + 3×1.2 + 4×1.2 + 4×1.0 + 5×1.0 + 4×1.0 = 6.0 + 4.5 + 4.5 + 3.6 + 4.8 + 4.0 + 5.0 + 4.0 = **36.4**、分母 = **9.9**、36.4 / 9.9 ≈ **3.68**（判定: 良好）
+
+> ※ 上の総合スコア（4.56 / 3.68）は「公開ベンチ + 公式ドキュメント + 既存 spec 体感」を根拠とする暫定値。本プロジェクトでの実採否（jsdom 採用 / happy-dom 不採用）は L3 既存親和性の差（5 対 3）と L7 速度優位を相殺する L4 デバッグ安定性の差（4 対 3）に由来し、客観評価では happy-dom も「良好」帯に届く。
 
 #### 2.3.2 採否解説
 
-`(後続 plan で埋める)`
+- **合意点**: 両者とも Vitest の `environment` 切替で導入でき、Document / Window / Element / Event の基本 DOM API を実装する。Vue 3 SFC の描画と `@vue/test-utils` の `mount` / `flushPromises` の挙動は基本シナリオでは差が出ない。Shadow DOM・Custom Elements・MutationObserver も両者がサポートを謳う（公式）
+- **差分**:
+  - L3 既存親和性: jsdom は既存 `frontend/package.json` devDep + `frontend/vite.config.ts` の `environment: 'jsdom'` でゼロ手数。happy-dom は別 dep 追加 + 設定差し替えが必要で、Ionic Shadow DOM 検証では未実装 API を踏みやすいという既知の不安定さがある（親戦略書 §1.1）
+  - L4 デバッグ体験: jsdom は仕様準拠の実装で「なぜ失敗したか」が DOM 標準仕様にひもづいて読める。happy-dom は速度優先で省略された API に当たると失敗箇所が分かりにくく、未実装かバグかの切り分けに時間を要する（GitHub Discussion #1438 + 体感）
+  - L7 実行速度: 公開ベンチ（pkgpulse 2026 / Vitest Discussion #1607）で happy-dom が jsdom 比 2-4x、シナリオによっては 5-10x 高速。テストスイートが大規模化するほど効果が顕著
+  - L2 ドキュメント / L8 エコシステム: 10 年超の蓄積を持つ jsdom がいまだ優位。日本語記事と StackOverflow 解答の厚みで学習導線が短い
+- **本プロジェクトでの選択理由**: 親戦略書 §1.1 のとおり「速度メリットはあるが、Ionic / Vue 描画の検証で jsdom より不安定なケースがある」を最優先で採用判断。本リポジトリの主目的は「学習用テストパターン集」であり、既存 `useDemoSdk.spec.ts` を含む Ionic / Vue 描画シナリオで安定したパスを学習者に提供することが速度より重要。L3 既存親和性の差（5 対 3）と L4 デバッグ体験の差（4 対 3）が決定打。happy-dom は客観評価では「良好」帯（3.68）に届くものの、本プロジェクトのカテゴリ 3 では採用しない
+- **学習者向けメモ**: 以下のいずれかに該当する場合は happy-dom への切り替えを検討する余地がある: (a) テスト本数が数百本規模に膨らみ Vitest watch のフィードバックループ短縮が学習速度に直結する、(b) Shadow DOM / Web Components を使わない素の Vue / React コンポーネントのみをテストする、(c) CI コスト削減が学習継続性より優先度高くなった場合。Vitest は `// @vitest-environment happy-dom` のファイル単位コメントで部分採用が可能なので、L7 速度メリットを Ionic 非依存スペックだけに限って取り込む「混在運用」も選択肢になる
 
 #### 2.3.3 プロトタイプ設計
 
-該当なし。比較サンプル列が `—`。ただし採点表内で「Ionic コンポーネント描画の Shadow DOM 対応度」を L3 / L4 の根拠に含めること。
+該当なし（比較サンプル列が `—` のため、happy-dom 版 spec は作らない）。採否は §2.3.2 まで。
 
 ### 2.4 HTTP モック: MSW vs nock vs axios-mock-adapter
 
