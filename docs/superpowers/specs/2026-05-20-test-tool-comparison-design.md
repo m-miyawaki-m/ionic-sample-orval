@@ -518,15 +518,43 @@ WebdriverIO は比較サンプル枠外（採点のみ）。
 
 #### 2.10.1 採点表
 
-`(後続 plan で埋める)`
+| 軸 | Markdown 決定表 → `it.each` | 根拠 | Gherkin (.feature) | 根拠 |
+|---|---|---|---|---|
+| L1 学習コスト | 5 | Markdown テーブル記法は学習者全員が既に読み書きできる前提知識。front matter（`target` / `generator` / `out`）+ `<role>.<path>` 列名（親戦略書 §3.3）の 2 規約のみで完結し、テストコード（`it.each(cases)`）からはケースデータが直接見える（親戦略書 §3.3 / §3.5 + 体感） | 3 | Given/When/Then 3 構文 + Scenario Outline / Examples テーブル + Tag / Background など Gherkin 文法の習得が必要。さらに `.feature` の各 step を別ファイル（`*.steps.ts`）に正規表現マッチで実装する「step 定義」概念を別途学ぶ必要があり、初学者が「最初の 1 本」を書くまでの概念量が大きい（cucumber.io/docs/gherkin/reference + 体感） |
+| L2 ドキュメント | 4 | Markdown 自体は説明不要。テーブル仕様は親戦略書 §3.3 に集約済で本リポジトリ内で完結。ただし「決定表 → `it.each`」変換規約は本プロジェクト固有のため外部資料に頼れず、`docs/specs/cases/` 内の既存サンプルが学習導線となる（親戦略書 §3.3 / §3.5 + 体感） | 4 | Cucumber.js / cucumber.io 公式ドキュメントが網羅的、日本語含む BDD チュートリアル資産も豊富。ただし Vitest 連携の組み合わせ事例は薄く、`@cucumber/cucumber` を Vitest 配下で動かす独自連携の解説は限定的（cucumber.io + 体感） |
+| L3 既存親和性 | 5 | 親戦略書 §3.3 / §3.4 で `frontend/scripts/gen-cases/cli.ts` パイプ + `npm run gen:cases` が確立済、生成物 `*.cases.generated.ts` は既存 Vitest スイート（`useDemoSdk.spec.ts` 等）にそのまま import 可能。Android 側も `demo-sdk/.../resources/cases/*.json` 経由で `@MethodSource` に接続可（親戦略書 §3.3 / §3.4 / §3.5） | 2 | 本リポジトリに BDD ツール導入歴なし、`@cucumber/cucumber` + `@cucumber/vitest`（または独自ランナー）の追加依存と `cucumber.js` 設定ファイル新設が必要。`.feature` と `*.steps.ts` の二重ファイル構造が既存 spec の単一ファイル構造と衝突し、`vitest.config.ts` の `include` パターン拡張が要る（体感 + cucumber.io） |
+| L4 デバッグ体験 | 5 | 失敗時に `case_id`（C1 / C2 等）で行を特定可能、`it.each('$id', ...)` で Vitest テストエクスプローラに各ケースが個別 it として並ぶためブレークポイントもケース単位で打てる。生成物 `.cases.generated.ts` は TypeScript なので型補完・jump-to-definition も効く（親戦略書 §3.5 + 体感） | 3 | step マッチング失敗時は `Undefined. Implement with the following snippet:` のような正規表現ヒントが出るが、`.feature` 内のどの行から呼ばれたかの追跡は Cucumber HTML レポートを介する必要がある。step 関数にブレークポイントは打てるが「どのシナリオの何行目から来たか」がスタックトレースから直接読めない（cucumber.io + 体感） |
+| L5 VSCode 統合 | 4 | Vitest Explorer 経由で生成物 `.cases.generated.ts` の各ケースが Run/Debug lens 完備。決定表 `.md` 側は Markdown 標準プレビューで読めるが、`.md` から spec へジャンプする専用拡張はなく、行間ジャンプは手動（体感） | 3 | `CucumberOpen.cucumber-official` / `alexkrechik.cucumberautocomplete` 等の拡張で `.feature` の構文ハイライト・step 補完・step 定義ジャンプは効くが、Vitest Explorer とは別系統で Run/Debug lens が分裂する。`.feature` をテストエクスプローラに統合する公式拡張は本リポジトリ構成（Vitest）では存在しない（体感 + VS Code Marketplace） |
+| L6 保守性 | 5 | Markdown + Vitest 標準依存のみで外部 BDD ランタイム不要、親戦略書 §3.4「生成ファイルは git 管理 + CI 上で `git diff --exit-code` チェック」で同期ずれを機械検出。`gen-cases/cli.ts` は冪等再生成で仕様変更時の追従が自動（親戦略書 §3.4） | 4 | `@cucumber/cucumber` は活発にメンテされておりリリース頻度も月次レベルだが、メジャー版間の step 定義 API 変更（v7→v8 の Hook シグネチャ変更等）への追従が要る。Vitest 連携部分は非公式のため Vitest メジャー追従に 1 拍遅れる懸念あり（cucumber.io GitHub release + 体感） |
+| L7 実行速度 | 5 | 生成物は静的 TS ファイル、Vitest が直接 import するため追加パース層なし。`it.each` の各ケースは Vitest の並列実行に乗る（親戦略書 §3.5 + 体感） | 4 | Cucumber.js の `.feature` パース + step 正規表現マッチ + Cucumber Pickle 生成の前処理オーバヘッドあり。Vitest 単独実行と比べ cold start で数百 ms～秒オーダーの追加コスト（体感 + cucumber.io） |
+| L8 エコシステム | 4 | Markdown + Vitest のエコシステムをそのまま享受、生成物が TS なので Vitest UI / coverage v8 / レポータと 1st-class 連携。決定表記法自体は本プロジェクト固有のため独立した plugin 生態はない（親戦略書 §3.5 + 体感） | 4 | Cucumber.js は BDD エコシステム一式（@cucumber/html-formatter / @cucumber/junit-xml-formatter / Allure / SpecFlow 等の連携）を備え、レポータ・IDE 拡張・BDD 教材が豊富。ただし Vitest 系プラグイン（vitest-ui / browser mode 等）とは別系統となる（cucumber.io + 体感） |
+| **総合（加重平均）** | **4.63** | — | **3.30** | — |
+
+> 計算例 (Markdown 決定表): 分子 = 5×1.5 + 4×1.5 + 5×1.5 + 5×1.2 + 4×1.2 + 5×1.0 + 5×1.0 + 4×1.0 = 7.5 + 6.0 + 7.5 + 6.0 + 4.8 + 5.0 + 5.0 + 4.0 = **45.8**、分母 = 1.5×3 + 1.2×2 + 1.0×3 = **9.9**、45.8 / 9.9 ≈ **4.63**（判定: 優秀）
+> 計算例 (Gherkin): 分子 = 3×1.5 + 4×1.5 + 2×1.5 + 3×1.2 + 3×1.2 + 4×1.0 + 4×1.0 + 4×1.0 = 4.5 + 6.0 + 3.0 + 3.6 + 3.6 + 4.0 + 4.0 + 4.0 = **32.7**、分母 = **9.9**、32.7 / 9.9 ≈ **3.30**（判定: 要注意）
+
+> ※ 上の総合スコア（4.63 / 3.30）は「親戦略書 §3.3 / §3.4 / §3.5 + cucumber.io 公式 + 体感」を根拠とする暫定値。判定は Markdown 決定表「優秀」/ Gherkin「要注意」で、本プロジェクトでの実採否（Markdown 決定表採用 / Gherkin 不採用）は L1 学習コストの差（5 対 3）と L3 既存親和性の差（5 対 2）に由来する — §2.9 設計書連係（API）と同様、こちらも客観評価でも採用可否でも結果が一致するパターン。
 
 #### 2.10.2 採否解説
 
-`(後続 plan で埋める。L1 学習コストには「step 実装ファイルの分離」と「テーブル直接記述」の比較を含める)`
+- **合意点**: 両者とも「設計書（仕様）と実行可能テストを双方向にリンクする」目的を共有し、行（ケース）単位で `input / expect` を表形式で並べる構造、入力値変動による振る舞い差分を網羅的に列挙する「決定表」スタイル、レビュー時に仕様 → テスト → 実装の追跡が成立する点で同等の価値を提供する。シナリオ追加・編集をテキスト編集者（必ずしも実装者でなくてよい）が行える点も共通
+- **差分** (L# 明示):
+  - **L1 学習コスト**（5 vs 3、最大差）: Markdown 決定表は「Markdown テーブル + `<role>.<path>` 列名 + `it.each(cases)` の import」のみで完結し、**ケースデータがテストファイルから直接見える「テーブル直接記述」**構造。Gherkin は `.feature`（Given/When/Then 自然言語）と `*.steps.ts`（step 定義の正規表現実装）の **2 ファイルが分離**し、`.feature` 行 → step 関数 → 実コード の 2 段間接参照を読み解く必要がある。親戦略書 §1.1「step 実装が別ファイルになるため、Markdown 決定表のほうがテストとの距離が近い」がそのまま L1 差に対応
+  - **L3 既存親和性**（5 vs 2、最大差）: Markdown 決定表は親戦略書 §3.3 / §3.4 で `frontend/scripts/gen-cases/cli.ts` + `npm run gen:cases` のパイプが確定済で、生成物 `*.cases.generated.ts` を既存 Vitest スイートが import するだけで動く。さらに Android 側も `demo-sdk/.../resources/cases/*.json` 経由で `@MethodSource` に接続できる二段出力の経路が親戦略書で設計済。Gherkin は `@cucumber/cucumber` 系の追加依存と `cucumber.js` 設定ファイル新設、`vitest.config.ts` の include パターン拡張が必要で、本リポジトリに BDD ツール導入歴がないため学習者にとって不可逆な学習コストが発生
+  - **L4 デバッグ体験**（5 vs 3）: Markdown 決定表は失敗時に `case_id`（C1 / C2 等）で行を特定でき、Vitest テストエクスプローラに各ケースが個別 it として並ぶためブレークポイントもケース単位。Gherkin は step マッチング失敗時の正規表現ヒントは出るが、`.feature` のどの行から呼ばれたかの追跡は Cucumber HTML レポート経由となり 1 段間接参照が増える
+  - **L5 VSCode 統合**（4 vs 3）: Markdown 決定表は生成物が TS なので Vitest Explorer の Run/Debug lens がそのまま効く。Gherkin は `.feature` 専用拡張（cucumberautocomplete 等）は別途あるが Vitest Explorer と分裂し、Run/Debug 統合が二重化する
+  - **L6 保守性**（5 vs 4）: Markdown は Markdown + Vitest 標準依存のみで外部 BDD ランタイム不要、Gherkin は `@cucumber/cucumber` のメジャー版変更（step 定義 API / Hook シグネチャ等）への追従が要る
+  - **L7 実行速度**（5 vs 4）: Markdown 決定表は生成物が静的 TS ファイルで追加パース層なし。Gherkin は `.feature` パース + step 正規表現マッチの前処理コストあり
+  - **L2 ドキュメント / L8 エコシステム**（4 vs 4、同点）: Gherkin は BDD エコシステムが豊富で公式資産が厚い一方、Markdown 決定表は本プロジェクト固有規約のため外部資料に頼れない。両者の優劣はトレードオフで、加重平均には差として現れない
+- **本プロジェクトでの選択理由**: 親戦略書 §1 で Markdown 決定表 → `it.each` を採用、§1.1「step 実装が別ファイルになるため、Markdown 決定表のほうがテストとの距離が近い」と明文化された不採用理由がそのまま採点に反映された。客観評価でも Markdown 決定表 4.63（優秀）/ Gherkin 3.30（要注意）と差が明確で、本プロジェクトでは特に以下 3 点が決定的:
+  - (1) **学習サンプル集としてのテストと仕様の距離**: 本リポジトリの主目的は「学習用テストパターン集」であり、`docs/specs/cases/useDemoSdk.init.md` を開けば即座に対応する `*.spec.ts` のケースデータが読めることが学習価値の中核。Gherkin の `.feature` + `*.steps.ts` 分離は「step 関数を経由しないと振る舞いがわからない」間接参照を生み、学習者が仕様 → テストの双方向追跡をするときの認知負荷を増やす（L1 5 vs 3 の根拠）
+  - (2) **既存パイプとの整合**: 親戦略書 §3.3 / §3.4 で `gen-cases/cli.ts` の冪等再生成パイプ + CI 上の `git diff --exit-code` 同期チェック + 二段出力（TS / JSON）による Vitest と JUnit5 `@MethodSource` の両対応が設計済。Gherkin に切り替えると BDD ランタイム追加 + `vitest.config.ts` 拡張 + Android 側の step 定義経路の自作が必要で、§3 の自動連係パイプライン設計全体を組み直す不可逆コストが発生（L3 5 vs 2 の根拠）
+  - (3) **ステークホルダ構成との整合**: Gherkin の主要な利点は「非開発者ステークホルダ（PdM / QA / ビジネス側）が Given/When/Then の自然言語でテストシナリオを書ける」点だが、本プロジェクトは個人学習サンプル集であり非開発者ステークホルダのテスト記述参加を前提としない。Gherkin の自然言語層の学習コストに見合うリターンが本プロジェクトでは発生しない
+- **学習者向けメモ**: 以下のいずれかに該当する場合は Gherkin への切り替えを検討する余地がある: (a) **非開発者ステークホルダがテスト記述に参加する**プロジェクト（PdM / QA / ビジネスアナリストがユーザストーリーごとにシナリオを書く運用、規制業界の受入テスト等）。Gherkin の自然言語層がドキュメント + テストの兼用として機能する、(b) **大規模 E2E スイートで「シナリオの言葉」をチームで共有したい**場合（マイクロサービス境界をまたぐエンドツーエンド受入テストで Given/When/Then の共通語彙を整備したい等）、(c) **BDD（Behavior-Driven Development）の学習目的そのもの**が目標の場合。`@cucumber/cucumber` + `@cucumber/vitest`（または独自連携）の追加依存を許容できるなら、`.feature` の自然言語層と step 実装層の分離パターンを学べる。なお (a) (b) (c) のいずれも本プロジェクトの主目的（個人学習用の Ionic + Vue + Vitest サンプル集）には合致しないため、本書では不採用とする。客観評価で Gherkin が「要注意」帯に落ちた要因は学習導線軸（L1 / L3）の重さによるもので、BDD ツール自体の品質ではない点に留意
 
 #### 2.10.3 プロトタイプ設計
 
-該当なし。
+該当なし（比較サンプル列が `—` のため、Gherkin 版 `.feature` + `*.steps.ts` の実装は作らない）。採否は §2.10.2 まで。
 
 ### 2.11 雛形生成: plop vs hygen
 
