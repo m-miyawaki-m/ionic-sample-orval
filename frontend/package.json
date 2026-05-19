@@ -11,7 +11,8 @@
     "test:unit": "vitest",
     "lint": "eslint .",
     "gen": "orval --config ./orval.config.ts",
-    "gen:fixtures": "tsx scripts/gen-fixtures/cli.ts"
+    "gen:fixtures": "tsx scripts/gen-fixtures/cli.ts",
+    "gen:cases": "tsx scripts/gen-cases/cli.ts"
   },
   "dependencies": {
     "@capacitor/android": "5.7.8",
