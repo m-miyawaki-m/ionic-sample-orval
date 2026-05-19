@@ -43,22 +43,39 @@ describe('extractScenarios', () => {
     ])
   })
 
-  it('honors x-status for examples without their own status', () => {
+  it('honors x-status override even when the parent response key differs', () => {
     const withErr = `
 paths:
   /a:
     get:
       responses:
-        '500':
+        '200':
           content:
             application/json:
               examples:
                 server_error:
                   summary: s
                   value: { code: E_X, message: m }
+                  x-status: 503
 `
     const scenarios = extractScenarios(parseOpenApi(withErr))
-    expect(scenarios[0].scenarios[0]).toEqual({ key: 'server_error', status: 500, body: { code: 'E_X', message: 'm' } })
+    expect(scenarios[0].scenarios[0]).toEqual({ key: 'server_error', status: 503, body: { code: 'E_X', message: 'm' } })
+  })
+
+  it('derives operationId from path with parameters when openapi omits operationId', () => {
+    const noOpId = `
+paths:
+  /api/items/{id}:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              examples:
+                one: { summary: s, value: { id: 1 } }
+`
+    const scenarios = extractScenarios(parseOpenApi(noOpId))
+    expect(scenarios[0].operationId).toBe('getApiItemsById')
   })
 })
 

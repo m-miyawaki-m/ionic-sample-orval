@@ -42,8 +42,18 @@ export interface OperationScenarios {
 }
 
 function defaultOperationId(method: string, path: string): string {
-  const camel = path.replace(/\/(\w)/g, (_m, c: string) => c.toUpperCase()).replace(/[^A-Za-z0-9]/g, '')
-  return method + camel.charAt(0).toUpperCase() + camel.slice(1)
+  const parts = path.split('/').filter(Boolean)
+  let id = method
+  for (const part of parts) {
+    const paramMatch = /^\{(.+)\}$/.exec(part)
+    if (paramMatch) {
+      const name = paramMatch[1]
+      id += 'By' + name.charAt(0).toUpperCase() + name.slice(1)
+    } else {
+      id += part.charAt(0).toUpperCase() + part.slice(1)
+    }
+  }
+  return id
 }
 
 export function extractScenarios(doc: OpenApiDoc): OperationScenarios[] {
