@@ -18,6 +18,18 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    environment: 'jsdom'
+    environment: 'jsdom',
+    reporters: ['default', 'html', 'junit'],
+    outputFile: {
+      html: '.vitest-report/index.html',
+      junit: '.vitest-report/junit.xml'
+    },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      reportsDirectory: 'coverage',
+      include: ['src/**/*.{ts,vue}'],
+      exclude: ['src/**/*.{test,spec}.ts', 'src/api/**', 'src/mocks/generated/**']
+    }
   }
 })
