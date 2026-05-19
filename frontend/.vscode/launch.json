@@ -1,0 +1,55 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Vitest: current file",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/frontend/node_modules/vitest/vitest.mjs",
+      "args": ["run", "${relativeFile}"],
+      "cwd": "${workspaceFolder}/frontend",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Cypress: run current spec (headed + debug port)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/frontend/node_modules/cypress/bin/cypress",
+      "args": ["run", "--browser", "chrome", "--headed", "--no-exit",
+               "--spec", "${relativeFile}"],
+      "cwd": "${workspaceFolder}/frontend",
+      "env": { "CYPRESS_REMOTE_DEBUGGING_PORT": "9222" },
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Cypress: attach to Chrome (port 9222)",
+      "type": "chrome",
+      "request": "attach",
+      "port": 9222,
+      "webRoot": "${workspaceFolder}/frontend",
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "webpack:///./*": "${webRoot}/*",
+        "webpack:///src/*": "${webRoot}/src/*"
+      }
+    },
+    {
+      "name": "Cypress: debug plugin/node side",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/frontend/node_modules/cypress/bin/cypress",
+      "args": ["open"],
+      "cwd": "${workspaceFolder}/frontend",
+      "console": "integratedTerminal"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Cypress: spec + attach",
+      "configurations": [
+        "Cypress: run current spec (headed + debug port)",
+        "Cypress: attach to Chrome (port 9222)"
+      ]
+    }
+  ]
+}
