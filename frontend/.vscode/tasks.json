@@ -1,0 +1,28 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "fe: dev",            "type": "npm", "script": "dev",          "path": "frontend", "isBackground": true },
+    { "label": "fe: vitest watch",   "type": "npm", "script": "test:unit",    "path": "frontend" },
+    { "label": "fe: cypress run",    "type": "npm", "script": "test:e2e",     "path": "frontend" },
+    { "label": "fe: gen fixtures",   "type": "npm", "script": "gen:fixtures", "path": "frontend" },
+    { "label": "fe: gen cases",      "type": "npm", "script": "gen:cases",    "path": "frontend" },
+    {
+      "label": "be: mvnw test",
+      "type": "shell",
+      "command": ".\\mvnw.cmd test",
+      "options": { "cwd": "${workspaceFolder}/backend" }
+    },
+    {
+      "label": "sdk: gradle test (JVM unit)",
+      "type": "shell",
+      "command": ".\\gradlew.bat :demo-sdk:test",
+      "options": { "cwd": "${workspaceFolder}/frontend/android" }
+    },
+    {
+      "label": "sdk: gradle connectedAndroidTest (Espresso)",
+      "type": "shell",
+      "command": ".\\gradlew.bat :app:connectedAndroidTest",
+      "options": { "cwd": "${workspaceFolder}/frontend/android" }
+    }
+  ]
+}
