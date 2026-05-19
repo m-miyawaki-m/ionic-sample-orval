@@ -560,15 +560,42 @@ WebdriverIO は比較サンプル枠外（採点のみ）。
 
 #### 2.11.1 採点表
 
-`(後続 plan で埋める)`
+| 軸 | plop | 根拠 | hygen | 根拠 |
+|---|---|---|---|---|
+| L1 学習コスト | 4 | `plopfile.mjs` に `setGenerator(name, { description, prompts, actions })` を 1 つ書けば動く。Handlebars + inquirer.js の 2 概念だけで完結し、対話 UI が標準で付くため「`plop case items` → 名前を聞かれる → ファイルが生成される」体験が直感的。`plopfile.mjs` の API（generator / helper / partial）を理解する必要はあるが、親戦略書 §5.5 の 7 種類のテンプレートを 1 ファイルに集約できる（公式 plopjs.com + 体感） | 3 | `_templates/<generator>/<action>/` のファイルツリー規約 + EJS 文法 + frontmatter (`to:` / `inject:` / `skip_if:`) の 3 概念を学ぶ必要あり。CLI は `hygen <generator> <action>` のシェル風で簡潔だが、対話プロンプトを使うには `prompt.js` を別途書く必要があり「最初の 1 本」までの概念量が多い（公式 hygen.io + 体感） |
+| L2 ドキュメント | 4 | plopjs.com の Getting Started + Plopfile / Generators / Actions / Helpers の章立てが整理され、40+ contributors の GitHub Discussions / Stack Overflow 解答が蓄積。Vue / React / Angular 系の日本語チュートリアル記事も継続的に追加されている（公式 + 体感） | 3 | hygen.io 公式ドキュメントは Quick Start / Templates / Generators / Advanced と章立て自体は揃うが、後述の L6 のとおり 2022 以降メンテが停滞しており、最新フレームワーク連携（Vue 3 / Vite / Vitest 等）の事例追加が止まっている。日本語記事は plop よりさらに薄い（公式 + 体感） |
+| L3 既存親和性 | 4 | 本リポジトリに plop は未導入だが、親戦略書 §5.5 で `plop/plopfile.mjs` + 7 種類の Handlebars テンプレート（`case.md.hbs` / `spec.composable.ts.hbs` / `spec.component.ts.hbs` / `spec.e2e.ts.hbs` / `spec.android-unit.kt.hbs` / `sample.<kind>.ts.hbs` / `view.vue.hbs` 等）の配置構成と `npm run scaffold` 起動経路が設計済。`devDependencies` に追加するだけで `frontend/package.json` に乗る（親戦略書 §5.5 + 公式） | 4 | 同じく未導入。`_templates/` ディレクトリツリーを新規作成する点でも plop の `plop/templates/` と所要作業は同等で、JS/TS プロジェクトに合流可能。Capacitor / Vue 3 SFC / Cypress spec / Kotlin JUnit テストのテンプレ化は EJS でも実装可能で、純粋な技術適合性に大差はない（公式 + 体感） |
+| L4 デバッグ体験 | 4 | プロンプトのバリデーション失敗・Handlebars テンプレートの構文エラー・action 実行失敗が CLI 出力にファイル名 + 行番号で出る。`plop --plopfile <path>` でテスト実行も可能で、`actions` 内に JS 関数を直接書けるため `console.log` でのデバッグも容易（公式 + 体感） | 3 | EJS 構文エラーは出力されるが「どの frontmatter のどのキーが原因か」が読みにくいケースがあり、`inject:` 失敗時のエラー位置追跡は手動。対話プロンプトを動的にする `prompt.js` のデバッグは plop の inquirer 統合より一段間接的（公式 + 体感） |
+| L5 VSCode 統合 | 3 | plop 専用 VSCode 拡張は存在せず、`npm run scaffold` を tasks.json 経由で起動する標準運用。Handlebars テンプレート (`.hbs`) の構文ハイライトは汎用 Handlebars 拡張で得られるが、Run/Debug lens 級の統合はない（VS Code Marketplace + 体感） | 3 | hygen 専用拡張も存在せず、`hygen <generator> <action>` を tasks.json で起動する形は plop と同等。EJS 拡張で構文ハイライトは得られるが、frontmatter とテンプレ本文の境界を意識した補完はない（VS Code Marketplace + 体感） |
+| L6 保守性 | 5 | v4.0.5 が約 3 ヶ月以内（2026/01-02 頃）にリリース、年間複数の安定リリース cadence。Snyk 等のメンテ評価でも "Healthy" 判定、`node-plop` を別パッケージに分離して CLI と core を分離する設計刷新も進行中（公式 GitHub releases + npm + Snyk） | 1 | **v6.2.11 が 2022 リリースを最後にメジャー / マイナーともリリースなし**（npm 公開で約 4 年経過）。Snyk のメンテ評価は "Inactive" で、GitHub の Issue / PR ともに過去 1 年活動が停滞。実装自体は動作するが、Node / EJS のメジャー更新に追随していない懸念があり、本プロジェクト想定の Node 22+ / TypeScript 5.x 環境では将来のリスクが大きい（公式 GitHub + npm + Snyk） |
+| L7 実行速度 | 5 | 雛形生成は 1 ファイル数十ミリ秒オーダーで完了する一回限りの操作。`plop view foo` のように複数ファイル一括生成しても秒オーダー、テスト実行のように watch ループに乗らない用途のため速度は実用上問題にならない（体感） | 5 | 同じく雛形生成の一回限り操作で、EJS パース + ファイル書き出しのみ。実行速度は plop と実質同等（体感） |
+| L8 エコシステム | 4 | npm weekly downloads 約 1,062,040（2026 時点）、GitHub stars 約 7,512、Microsoft / PayPal / Mozilla / Adobe / MasterCard / Vimeo / Discord / Gatsby など大手採用実績の表示あり。Vue / React 公式や周辺ライブラリの「scaffolding にどれを使うか」議論で第一に挙がる定番ツール（公式 + npm trends + 体感） | 2 | npm weekly downloads 約 273,612-301,000（2026 時点）、GitHub stars 約 5,849-5,939。Microsoft / Redux 系の採用事例はあるが、メンテ停滞により周辺プラグイン・テンプレート集の追加が止まり、エコシステム拡張が縮小傾向。新規参入には「現役メンテのある plop」が選ばれる流れ（公式 + npm trends + 体感） |
+| **総合（加重平均）** | **4.08** | — | **3.05** | — |
+
+> 計算例 (plop): 分子 = 4×1.5 + 4×1.5 + 4×1.5 + 4×1.2 + 3×1.2 + 5×1.0 + 5×1.0 + 4×1.0 = 6.0 + 6.0 + 6.0 + 4.8 + 3.6 + 5.0 + 5.0 + 4.0 = **40.4**、分母 = 1.5×3 + 1.2×2 + 1.0×3 = **9.9**、40.4 / 9.9 ≈ **4.08**（判定: 良好）
+> 計算例 (hygen): 分子 = 3×1.5 + 3×1.5 + 4×1.5 + 3×1.2 + 3×1.2 + 1×1.0 + 5×1.0 + 2×1.0 = 4.5 + 4.5 + 6.0 + 3.6 + 3.6 + 1.0 + 5.0 + 2.0 = **30.2**、分母 = **9.9**、30.2 / 9.9 ≈ **3.05**（判定: 要注意）
+
+> ※ 上の総合スコア（4.08 / 3.05）は「公式（plopjs.com / hygen.io）+ npm trends + Snyk Maintenance Score + 親戦略書 §5.5 plop テンプレート設計」を根拠とする暫定値。本プロジェクトでの実採否（plop 採用 / hygen 不採用）は L6 保守性の差（5 対 1）と L8 エコシステムの差（4 対 2）が決定打で、L1 / L2 / L4 の小さな差も全て plop 優位に積み上がる。客観評価でも plop は「良好」帯（4.08）に乗り、hygen は「要注意」帯（3.05）に落ちる — §1.3 の原則どおり「メンテ停滞は学習サンプル集の中長期運用と相性が悪い」が直接スコアに反映された結果。
 
 #### 2.11.2 採否解説
 
-`(後続 plan で埋める)`
+- **合意点**: 両者とも「テンプレートファイル + 変数置換 + ファイル生成」という雛形ツールの基本機能を提供し、対話 UI による入力プロンプト・Vue 3 SFC / Cypress spec / Kotlin JUnit テスト等の任意形式ファイル生成・複数ファイル一括生成（plop は `actions[]`、hygen は generator/action ツリー）に対応する。`npm run scaffold` 系の npm script から起動できる点、devDependency としてプロジェクトに同梱できる点、CI 自動実行に乗せられる点（雛形コミット忘れの検知等）も共通。どちらを採用しても親戦略書 §5.5 の 7 テンプレート（case / spec.composable / spec.component / spec.e2e / spec.android-unit / sample.comparison / view）は技術的に実装可能
+- **差分** (L# 明示):
+  - **L6 保守性**（5 vs 1、最大差）: plop は v4.0.5 が約 3 ヶ月以内のリリースで Snyk 評価 "Healthy"、`node-plop` 分離による core/CLI モジュール分割の設計刷新も進行中。hygen は v6.2.11 が 2022 公開を最後にメジャー / マイナーともリリースなしで Snyk 評価 "Inactive"、Node / EJS のメジャー更新（特に Node 22+ / ESM 関連）への追従が止まっている。本プロジェクトの想定環境（Node 22+ / Vite / TypeScript 5.x）での将来リスクが大きい
+  - **L8 エコシステム**（4 vs 2）: plop は npm weekly downloads 約 1,062,040、GitHub stars 約 7,512 で、Microsoft / PayPal / Mozilla / Adobe / MasterCard / Vimeo / Discord / Gatsby 等の大手採用が公式サイトに明示。Vue / React 公式関連の「scaffolding ツール」議論で第一に挙がる定番。hygen は npm weekly downloads 約 273,612-301,000、GitHub stars 約 5,849-5,939 と一定の利用者を保つが、メンテ停滞によりプラグイン・テンプレート集の追加が止まりエコシステムが縮小傾向
+  - **L1 学習コスト**（4 vs 3）: plop は `plopfile.mjs` 1 ファイルに `setGenerator(name, { prompts, actions })` を書く API + Handlebars + inquirer.js の 2 概念で完結。hygen は `_templates/<generator>/<action>/` のファイルツリー規約 + EJS + frontmatter (`to:` / `inject:` / `skip_if:`) の 3 概念に加え、動的プロンプトには `prompt.js` を別途書く必要があり、「最初の 1 本」までの概念量が多い
+  - **L4 デバッグ体験**（4 vs 3）: plop は inquirer.js のバリデーション失敗・Handlebars 構文エラー・action 実行失敗が CLI に明示出力され、`actions` 内 JS 関数で `console.log` を直接書ける。hygen は EJS 構文エラーは出るが frontmatter の typo / `inject:` 失敗時の原因追跡が plop 比で 1 段間接的
+  - **L2 ドキュメント**（4 vs 3）: plop はメンテ継続中で最新フレームワーク連携（Vue 3 / Vite / Vitest）の事例追加が進む。hygen は 2022 でメンテが止まり、ドキュメント自体は残るが新フレームワーク事例の追加が止まった
+  - **L3 / L5 / L7**: いずれも実質同等（4 vs 4 / 3 vs 3 / 5 vs 5）。両者とも JS/TS プロジェクトに合流可能、専用 VSCode 拡張なし、雛形生成は一回限りのため実行速度は実用上問題にならない
+- **本プロジェクトでの選択理由**: 親戦略書 §1 で plop を採用、§5.5 で `plopfile.mjs` 構成 + 7 種類の Handlebars テンプレート（`case.md.hbs` / `spec.composable.ts.hbs` / `spec.component.ts.hbs` / `spec.e2e.ts.hbs` / `spec.android-unit.kt.hbs` / `sample.<kind>.ts.hbs` / `view.vue.hbs` / `composable.ts.hbs`）+ `npm run scaffold` 起動経路を設計済（未実装、P7 で導入予定）。客観評価でも plop 4.08（良好）/ hygen 3.05（要注意）と差が明確で、本プロジェクトでは特に以下 3 点が決定的:
+  - (1) **Vue / Vite プロジェクトでの採用事例の多さ**: plop は Vue / React 公式や周辺ライブラリの scaffolding 議論で第一に挙がる定番ツールで、本リポジトリ（Ionic + Vue 3 + Vite + Vitest 構成）でも Vue 3 SFC / Vitest spec / Cypress spec の雛形を Handlebars で書いた既存事例が公開チュートリアルに豊富に存在する。学習サンプル集として「他プロジェクトで遭遇したときに即座に応用できる」標準スキルを学べる
+  - (2) **メンテ継続性の差**: hygen は 2022 以降リリースなしで、本プロジェクトの 1-3 年の運用期間で Node / EJS のメジャー更新に追従できないリスクが顕在化する可能性が高い（L6 5 vs 1 の根拠）。雛形ツールは「壊れたら全テンプレが動かなくなる」単一障害点になりやすく、保守停滞は学習サンプル集の致命傷
+  - (3) **対話 UI の標準提供**: plop は inquirer.js が標準同梱されており `prompts: [{ type: 'input', name: 'target', message: '...' }]` を書くだけで対話 UI が立ち上がる。hygen も `prompt.js` で対応可能だが追加ファイル + 動的プロンプト API の学習が要り、`plop case <target>` / `plop spec:composable <name>` の 7 種類のジェネレータを「学習者が即座に試せる」体験で plop が有利
+- **学習者向けメモ**: 以下のいずれかに該当する場合は hygen への切り替えを検討する余地がある: (a) **シェル風 CLI を好む**チーム — `hygen component new MyComponent` のような positional argument 中心の起動を、`plop component` 後にプロンプトで聞かれる形よりも好む場合。CI 自動化スクリプトでも引数渡しが直感的になる、(b) **`inject:` / `add` / `shell` などの Action 中心の利用**が主目的 — 既存ファイルの特定箇所に行を挿入する `inject:` action は hygen の frontmatter で `before:` / `after:` 正規表現指定が plop より直感的で、ファイル新規作成より既存ファイル編集が雛形作業の主体になるプロジェクト（既存 routes 配列にエントリを足す、既存 i18n 辞書にキーを足す等）で hygen の表現力が活きる、(c) **EJS テンプレートに慣れている**チーム — Ruby on Rails 出身者など、Handlebars よりも `<% %>` / `<%= %>` の制御構文を好む場合。なお (a) (b) (c) のいずれも、メンテ停滞リスク（L6 1 点）を許容できる前提でのみ成立する。本プロジェクトは個人学習サンプル集として 1-3 年の運用を想定し、上記特殊条件のいずれにも該当しないため plop を採用する
 
 #### 2.11.3 プロトタイプ設計
 
-該当なし。
+該当なし（比較サンプル列が `—` のため、hygen 版テンプレート / generator は作らない）。採否は §2.11.2 まで。
 
 ---
 
