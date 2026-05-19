@@ -24,7 +24,16 @@ npm-debug.log*
 /.versions
 /.vscode/*
 !/.vscode/extensions.json
+!/.vscode/launch.json
+!/.vscode/tasks.json
+
+# Test evidence (HTML reports, JUnit XML, screenshots) — local only
+/.vitest-report
 /coverage
+/tests/e2e/screenshots
+/tests/e2e/reports
+/tests/e2e/videos
+
 /dist
 /node_modules
 /platforms
