@@ -478,15 +478,41 @@ WebdriverIO は比較サンプル枠外（採点のみ）。
 
 #### 2.9.1 採点表
 
-`(後続 plan で埋める)`
+| 軸 | OpenAPI `examples` 拡張 | 根拠 | 独立 YAML/JSON データシート | 根拠 |
+|---|---|---|---|---|
+| L1 学習コスト | 5 | OpenAPI spec を学んだ人なら `examples:` キー追加のみで完結、新文法ゼロ。既存 `openapi/openapi.yaml` の `/api/items` で `two_items` / `empty` / `large_list` / `server_error` の 4 シナリオが既に書かれており雛形が揃う（既存コード + 公式 spec.openapis.org/oas/v3.1.0 §4.8.5） | 3 | テストデータ用の独自スキーマ（命名規約・参照解決・status コード対応）を自前で設計し、読み込みスクリプトも自作する必要がある。既存 OpenAPI 学習者にとっては「もう 1 つ別の DSL」を覚える追加コスト（体感） |
+| L2 ドキュメント | 5 | OpenAPI 3.1 公式（spec.openapis.org）+ Orval 公式（orval.dev）+ Swagger UI / Redocly / Stoplight の解説が網羅的、日本語記事も多数。`examples` 拡張の書式は OAS §4.8.5 Example Object に明文化（公式） | 2 | 独自規約のため公式ドキュメントは存在せず、プロジェクト内 README で命名規約・スキーマを毎回整備する必要がある。学習者が外部資料に頼れず、本プロジェクト固有知識が増える（体感） |
+| L3 既存親和性 | 5 | 既存 `frontend/orval.config.ts` で `mock.useExamples: true` を設定済、`frontend/src/mocks/handlers.ts` で `generatedHandlers`（OpenAPI examples 由来）と Orval-default mock を合成済。親戦略書 §3.1 / §3.2 のパイプ（`gen-fixtures.ts` → `mocks/generated/*.fixtures.ts`）の単一の真実点として確定済み（既存コード + 親戦略書 §3） | 2 | Orval / MSW パイプとは別経路の読み込みスクリプト・合成ロジックを自作することになる。現状の `useExamples: true` 設定を破棄して `handlers.ts` への手動合成が必要で、Cypress fixtures との二重供給も発生（既存コード + 親戦略書 §1.1） |
+| L4 デバッグ体験 | 4 | Swagger UI / Redocly で examples を視覚プレビュー可能、Orval 生成物に `summary` がコメントとして残るためテストデータの意図が読み取れる。spec の YAML 構文エラーは行番号付きで出るが、`x-status` 等の拡張属性の typo は生成時まで気付きにくい（公式 + 体感） | 3 | JSON Schema 検証を自前で組めば lint は通せるが、失敗時のエラー出力は独自パーサの作り込み次第。OpenAPI 系の成熟したエラー文言（"missing required field" 等）は使えない（体感） |
+| L5 VSCode 統合 | 4 | `42Crunch.vscode-openapi` / `Arjun.swagger-viewer` 等の OpenAPI 拡張で構文補完・lint・Swagger UI プレビュー・$ref ジャンプが効く。ただし `examples` 専用 UI はなく、Example Object の編集体験は素の YAML 編集と同等（公式 + 体感） | 3 | 汎用 YAML / JSON 拡張（`redhat.vscode-yaml`）で構文 lint と `$schema` 経由の補完は可能だが、spec との連動補完・プレビュー UI はなし（体感） |
+| L6 保守性 | 5 | spec を single source of truth として一元化、`npm run gen:fixtures` 冪等再生成 + 親戦略書 §3.4「CI 上で `git diff --exit-code` チェック」で同期ずれを機械検出できる。API 仕様変更時にテストデータが自動追従する（親戦略書 §3.4 + 公式） | 2 | OpenAPI 仕様変更時のテストデータ追従が手動。Item スキーマと例データが別管理となり、親戦略書 §1.1「OpenAPI と二重管理になり仕様とずれるリスクが高い」が常時顕在化（親戦略書 §1.1） |
+| L7 実行速度 | 5 | YAML パース + Orval 生成のみで秒オーダー、生成物は静的 TS ファイルなのでテスト実行時の追加コスト 0（既存コード + 体感） | 5 | YAML/JSON パース + TS 出力のみで OpenAPI 経由と実速度差はほぼなし。テスト実行時も静的ファイル参照で同等（体感） |
+| L8 エコシステム | 5 | Orval / Swagger UI / Redocly / Stoplight / Prism / openapi-generator 等の連携エコシステムが豊富。本プロジェクトでも `openapi/openapi.yaml` の `servers` に Prism mock サーバ（`http://localhost:4010`）を登録済で、examples が即時 mock 応答として機能（既存コード + 公式） | 2 | jsonschema / ajv 等の汎用 JSON Schema 検証ツールが使える程度。Swagger UI / Redocly / Prism 等の OpenAPI 系資産は一切活用不可（体感） |
+| **総合（加重平均）** | **4.76** | — | **2.70** | — |
+
+> 計算例 (OpenAPI examples): 分子 = 5×1.5 + 5×1.5 + 5×1.5 + 4×1.2 + 4×1.2 + 5×1.0 + 5×1.0 + 5×1.0 = 7.5 + 7.5 + 7.5 + 4.8 + 4.8 + 5.0 + 5.0 + 5.0 = **47.1**、分母 = 1.5×3 + 1.2×2 + 1.0×3 = **9.9**、47.1 / 9.9 ≈ **4.76**（判定: 優秀）
+> 計算例 (独立 YAML/JSON): 分子 = 3×1.5 + 2×1.5 + 2×1.5 + 3×1.2 + 3×1.2 + 2×1.0 + 5×1.0 + 2×1.0 = 4.5 + 3.0 + 3.0 + 3.6 + 3.6 + 2.0 + 5.0 + 2.0 = **26.7**、分母 = **9.9**、26.7 / 9.9 ≈ **2.70**（判定: 要注意）
+
+> ※ 上の総合スコア（4.76 / 2.70）は「公式（spec.openapis.org / orval.dev）+ 既存 `openapi/openapi.yaml` / `frontend/orval.config.ts` / `frontend/src/mocks/handlers.ts` + 親戦略書 §1.1 / §3.1-§3.4 + 体感」を根拠とする暫定値。本プロジェクトでの実採否（OpenAPI examples 採用 / 独立 YAML/JSON 不採用）は L3 既存親和性の差（5 対 2）と L6 保守性の差（5 対 2）に由来し、独立 YAML/JSON は客観評価でも「要注意」帯に落ちる — §2.4 HTTP モック軸と異なり、こちらは客観評価でも採用可否でも独立 YAML/JSON が不利という結果。
 
 #### 2.9.2 採否解説
 
-`(後続 plan で埋める。L3 既存親和性は Orval / MSW パイプとの整合を根拠に含める)`
+- **合意点**: 両者ともテストデータ（fixtures / scenarios）を YAML/JSON 形式で記述し、`gen-fixtures.ts` 系スクリプトで TS / JSON 出力に変換して Vitest / MSW / Cypress から参照する基本構造を持つ。バージョン管理（git）と CI 同期チェック（`git diff --exit-code`）に乗せられる点、`empty` / `two_items` / `large_list` / `server_error` のようなシナリオ単位のキー命名で複数パターンを切り替えられる点も共通
+- **差分** (L# 明示):
+  - **L3 既存親和性**: OpenAPI examples（5）は既存 `frontend/orval.config.ts` の `mock.useExamples: true` 設定 + `frontend/src/mocks/handlers.ts` の `generatedHandlers` 合成 + 親戦略書 §3.1 / §3.2 で確立済みの Orval / MSW パイプにそのまま乗る。シナリオ追加は `openapi/openapi.yaml` への `examples:` キー追加 1 か所で済む。一方、独立 YAML/JSON（2）は Orval パイプとは別経路の読み込みスクリプト・MSW handler 合成・Cypress fixtures 出力をすべて自作する必要があり、現状の `useExamples: true` を破棄する不可逆コストが発生
+  - **L6 保守性**: OpenAPI examples（5）は spec を single source of truth として API 仕様（schema）とテストデータ（examples）が同一ファイルに同居し、仕様変更時にテストデータが構造的に追従する。`npm run gen:fixtures` の冪等再生成と CI 上の `git diff --exit-code` で同期ずれを機械検出可能。独立 YAML/JSON（2）は Item スキーマと例データが別管理となり、親戦略書 §1.1「OpenAPI と二重管理になり仕様とずれるリスクが高い」が常時顕在化、レビュー時に「spec と fixtures のどちらが正か」の判断が人手で必要
+  - **L1 学習コスト / L2 ドキュメント**: OpenAPI examples（5/5）は OAS §4.8.5 Example Object として標準化された記法で、公式ドキュメント・Swagger UI / Redocly 等の解説資産が網羅的。独立 YAML/JSON（3/2）は独自規約となるためプロジェクト内 README で命名規約・スキーマを毎回整備する必要があり、学習者が外部資料に頼れず本プロジェクト固有知識が増える
+  - **L8 エコシステム**: OpenAPI examples（5）は Orval / Swagger UI / Redocly / Stoplight / Prism / openapi-generator など連携可能なツール群が豊富。本プロジェクトでは既に `openapi/openapi.yaml` の `servers` に Prism mock サーバ（`http://localhost:4010`）が登録されており examples が即時 mock 応答として機能する。独立 YAML/JSON（2）は jsonschema / ajv 等の汎用検証ツールが使える程度で、OpenAPI 系の成熟資産は一切活用不可
+  - **L7 実行速度**: 両者とも YAML/JSON パース + 静的ファイル出力で実速度差はなし（5 vs 5）。スコアに寄与しない軸
+- **本プロジェクトでの選択理由**: 親戦略書 §1 で OpenAPI examples 拡張を採用、§1.1「OpenAPI と二重管理になり仕様とずれるリスクが高い」と明文化された不採用理由がそのまま採点に反映された。客観評価でも OpenAPI examples 4.76（優秀）/ 独立 YAML/JSON 2.70（要注意）と差が明確で、本プロジェクトでは特に以下 3 点が決定的:
+  - (1) **二重管理リスクの回避**: 親戦略書 §3.1 の「設計書 → テストデータ 自動連係パイプライン」の前提が「spec と fixtures の単一の真実点」であり、独立 YAML/JSON はこの前提を根本から否定する。L6 保守性 5 vs 2 の差が直接ここに対応
+  - (2) **spec を single source of truth に保つ**: 既存 `openapi/openapi.yaml` の `/api/items` で `two_items` / `empty` / `large_list` / `server_error` の 4 シナリオが定義済、`frontend/orval.config.ts` の `useExamples: true` で MSW handler が自動生成され、`handlers.ts` が `generatedHandlers` を合成する形が完成済。spec を更新するだけで MSW / Cypress fixtures / Prism mock の全経路が追従する L3 既存親和性 5 の経路を捨てる合理性がない
+  - (3) **学習サンプル集としての教材価値**: OpenAPI は学習者が他プロジェクトでも遭遇する標準フォーマットで、`examples` 拡張も OAS 仕様内の正規機能。独自 YAML/JSON 規約は本プロジェクトでしか通用しない知識となり、§1.3「客観評価と実採否は別軸」の原則を踏まえても採用する学習価値が薄い
+- **学習者向けメモ**: 以下のいずれかに該当する場合は独立 YAML/JSON への切り替えを検討する余地がある: (a) **OpenAPI を採用していないプロジェクト**（GraphQL のみ / gRPC のみ / WebSocket のみで REST API を持たない構成）に合流する場合。spec の置き場所がないため独立データシートが現実解になる、(b) **テストデータが API レスポンス形と乖離する**ケース（複雑なフィクスチャー組み立て、状態遷移グラフ、E2E のシード DB など）で、OpenAPI schema に乗せると spec を歪めることになる場合。この場合は独立 YAML/JSON を OpenAPI examples と**併用**するのが現実的（API レスポンス は OpenAPI examples、状態シードは独立 YAML、と用途で分ける）、(c) **学習目的で「設計書連係パイプを自作する」体験そのもの**が目標の場合。独自スクリプトを書くことで OpenAPI / Orval のブラックボックスを覗く学習効果が得られる。なお (a) (b) (c) のいずれも本プロジェクトの主目的（Ionic + Vue + Orval + MSW の学習サンプル集）には合致しないため、本書では不採用とする
 
 #### 2.9.3 プロトタイプ設計
 
-該当なし。
+該当なし（比較サンプル列が `—` のため、独立 YAML/JSON 版の fixtures 生成スクリプト / handler 合成は作らない）。採否は §2.9.2 まで。
 
 ### 2.10 設計書連係（UI/SDK）: Markdown 決定表 → it.each vs Gherkin (.feature)
 
