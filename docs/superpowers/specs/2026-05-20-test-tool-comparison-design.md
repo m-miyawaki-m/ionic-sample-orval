@@ -250,15 +250,39 @@ weighted_score = Σ(score_i × weight_i) / Σ(weight_i where score_i ≠ NA)
 
 #### 2.4.1 採点表
 
-`(後続 plan で埋める。3 候補をそれぞれ 8 軸で採点)`
+| 軸 | MSW | 根拠 | nock | 根拠 | axios-mock-adapter | 根拠 |
+|---|---|---|---|---|---|---|
+| L1 学習コスト | 4 | `http.get('/api/items', () => HttpResponse.json(...))` の handler 概念は直感的だが、Service Worker 登録 (`browser.ts` + `public/mockServiceWorker.js`) と Node setup の二経路を理解する必要あり（公式 + 既存 `frontend/src/mocks/browser.ts`） | 4 | `nock(host).get(path).reply(status, body)` のチェーン API は短く、Node 開発者には馴染みが深い。ただし `nock.restore()` / `nock.cleanAll()` 等のライフサイクル管理を別途学ぶ必要あり（公式 README + GitHub Issues） | 5 | `mock.onGet('/api/items').reply(200, data)` の 1 行で完結。axios を知っていれば即書ける最小 API（公式 README） |
+| L2 ドキュメント | 5 | mswjs.io が章立てされ、Vitest / Jest / Playwright / Storybook 個別のレシピが網羅。日本語記事も Vue/Vite 文脈で充実（公式 + 体感） | 4 | 13 年級の蓄積で StackOverflow 解答多数、200+ リリース。ただし fetch / ESM 周りの落とし穴は GitHub Issues 散在で公式 README からは追いにくい（公式 + GitHub） | 3 | README 単一ページ中心で詳細は型定義に頼る。日本語記事は axios 利用者向けに一定数あるが MSW / nock より薄い（公式 + 体感） |
+| L3 既存親和性 | 5 | 既存 `frontend/package.json` に `msw ^2.14.4`、`frontend/src/mocks/handlers.ts` で Orval 生成 handler (`generatedHandlers`) と Orval-default mock (`getDefaultMock()`) を合成済み。Vitest setup と Cypress dev サーバ双方から同一 handler を再利用できる（既存コード） | 2 | Node の `http` モジュールを横取りする方式のため、ブラウザ実行（Cypress / Storybook / `npm run dev`）では機能しない。本プロジェクトでは Vitest（jsdom）と Cypress dev 両方を覆う MSW のリプレースになり得ず、用途が Vitest 専用へ縮退する（公式 + 体感） | 3 | `axiosInstance` (`frontend/src/api/axios.ts`) には適用可能だが、Orval は `fetch` 化された generator にも対応しており現状の axios 経路 1 本に縛られる。Cypress 経路や fetch 直叩きコードからは無効（公式 + 既存コード） |
+| L4 デバッグ体験 | 5 | DevTools の Network タブに `[MSW]` プレフィックス付きでリクエストが可視化され、ハンドラ未マッチ時の警告が一覧で出る。Service Worker ログは Chrome の Application パネルでも追跡可能（公式 + 体感） | 3 | unmatched request の警告は console に出るが Node 側のみ。`nock.recorder` で再現は取れるものの、失敗時に「どの handler に当たらなかったか」を辿るのが MSW より煩雑（公式 + GitHub Discussions） | 3 | `mock.history.get` でリクエスト履歴を取得できる程度。失敗時の出力は axios の `AdapterError` 経由で、Vue/Vitest のスタックトレースとの結びつきが弱い（公式 + 体感） |
+| L5 VSCode 統合 | 4 | Vitest Explorer / Cypress 拡張経由で MSW 利用テストを Run/Debug 可能。MSW 固有の拡張はないが Service Worker レイヤを意識する必要はない（体感） | 4 | Vitest Explorer 経由で動作。nock 固有の拡張はなく、テストランナー側に統合は依存（体感） | 4 | 同上。axios-mock-adapter 固有の拡張はなく、Vitest Explorer 経由で動作（体感） |
+| L6 保守性 | 5 | mswjs/msw は月次マイナーリリース、`^2.14.4` が現行。v2 系で fetch API ベースに刷新済みで Node 20+ / Vitest との追従が早い（公式 GitHub releases） | 5 | v14.0.15 (2026/05) で 200+ リリース、約 13.1k stars。アクティブメンテで Node マイナー追従も継続（公式 GitHub） | 3 | v2.1.0 (2024/10) を最後にリリース間隔が伸び、axios v1 系の API 変更追従はあるが、release cadence は MSW / nock より遅い（公式 GitHub） |
+| L7 実行速度 | 5 | Vitest + jsdom 上の handler 実行は同期に近い軽量パスで、既存 `useDemoSdk.spec.ts` 周辺の spec が秒以下で完了（体感） | 5 | Node `http.request` を直接差し替えるため極めて軽量。Vitest との組み合わせでも体感差は出ない（体感 + GitHub README） | 5 | axios adapter 差し替えのみでネットワーク往復ゼロ。3 者中もっとも単純な経路で実速度は同等（体感） |
+| L8 エコシステム | 5 | REST + GraphQL の両対応、Orval / OpenAPI 連携、Playwright / Storybook 公式レシピ、`workerDirectory` で SW ファイルを自動配置するなど周辺ツール群が厚い（公式 + 既存 `package.json` の `msw.workerDirectory`） | 3 | `nockBack` の record/replay、event hooks 等の専用機能はあるが、対象が Node HTTP に限定されエコシステムの広がりは MSW 比で限定的（公式 README） | 2 | axios 専用のため fetch / GraphQL / Service Worker / E2E ランナー連携いずれも対象外。ブラウザ + Node 双方で動くが、現代の Web スタックでは選択肢が axios 完結 SPA に限定される（公式） |
+| **総合（加重平均）** | **4.73** | — | **3.68** | — | **3.53** | — |
+
+> 計算例 (MSW): 分子 = 4×1.5 + 5×1.5 + 5×1.5 + 5×1.2 + 4×1.2 + 5×1.0 + 5×1.0 + 5×1.0 = 6.0 + 7.5 + 7.5 + 6.0 + 4.8 + 5.0 + 5.0 + 5.0 = **46.8**、分母 = 1.5×3 + 1.2×2 + 1.0×3 = **9.9**、46.8 / 9.9 ≈ **4.73**（判定: 優秀）
+> 計算例 (nock): 分子 = 4×1.5 + 4×1.5 + 2×1.5 + 3×1.2 + 4×1.2 + 5×1.0 + 5×1.0 + 3×1.0 = 6.0 + 6.0 + 3.0 + 3.6 + 4.8 + 5.0 + 5.0 + 3.0 = **36.4**、分母 = **9.9**、36.4 / 9.9 ≈ **3.68**（判定: 良好）
+> 計算例 (axios-mock-adapter): 分子 = 5×1.5 + 3×1.5 + 3×1.5 + 3×1.2 + 4×1.2 + 3×1.0 + 5×1.0 + 2×1.0 = 7.5 + 4.5 + 4.5 + 3.6 + 4.8 + 3.0 + 5.0 + 2.0 = **34.9**、分母 = **9.9**、34.9 / 9.9 ≈ **3.53**（判定: 良好）
+
+> ※ 上の総合スコア（4.73 / 3.68 / 3.53）は「公開資料（mswjs.io / nock README / axios-mock-adapter README）+ 既存 `frontend/src/mocks/handlers.ts` 体感」を根拠とする暫定値。本プロジェクトでの実採否（MSW 採用 / nock・axios-mock-adapter 不採用）は L3 既存親和性の差（5 / 2 / 3）と L8 エコシステムの差（5 / 3 / 2）に由来し、nock・axios-mock-adapter とも客観評価では「良好」帯（≥3.5）に届く — つまり「学習サンプル集としての客観評価」と「本プロジェクトで採用すべきか」が別軸である §1.3 の原則どおりの結果になっている。
 
 #### 2.4.2 採否解説
 
-`(後続 plan で埋める。Service Worker / Node interceptor / axios アダプタ の介入レイヤ差を中心に)`
+- **合意点**: 3 者とも REST API のリクエスト/レスポンスを差し替えるためのインターセプト機構を提供し、status / body / headers の制御、エラーレスポンス模倣、リクエスト履歴の検証が可能。TypeScript 型定義を同梱し、Vitest / Jest 等のテストランナーから利用できる
+- **差分**:
+  - L3 既存親和性: 介入レイヤの差が決定的。**MSW** は Service Worker（ブラウザ）+ Node interceptor（テスト）の二刀流で、本プロジェクトの Vitest（jsdom）/ `npm run dev` / Cypress dev サーバの 3 経路を単一 handler で覆える。**nock** は Node の `http.request` 差し替え専用でブラウザ実行（Cypress / dev サーバ）からは見えない。**axios-mock-adapter** は `axiosInstance` のアダプタ層に依存するため、Orval が将来 fetch 経路に切り替わったり、E2E から実 fetch を叩いたりすると素通りする
+  - L4 デバッグ体験: MSW は DevTools Network タブに `[MSW]` プレフィックスで可視化され、未マッチハンドラの警告が一覧化される（公式 + 体感）。nock / axios-mock-adapter は console ログとリクエスト履歴 API に頼り、Vue 描画失敗との結びつけに 1 段追加情報が要る
+  - L8 エコシステム: MSW は REST + GraphQL + Orval + OpenAPI + Playwright + Storybook の連携が公式レシピ化。nock は Node HTTP record/replay（`nockBack`）に特化、axios-mock-adapter は axios の上にしか展開せず周辺ツールがほぼない
+  - L1 学習コスト: 単純な API という観点では axios-mock-adapter（5）> MSW（4）= nock（4）。ただし「複数経路を 1 handler で覆える」という構造的な学習価値は MSW のみが提供する
+  - L6 保守性: MSW（月次マイナー、Node 20+/Vitest 追従が即時）と nock（v14、200+ release）はともに活発。axios-mock-adapter は v2.1.0 (2024/10) でリリース間隔が伸び気味
+- **本プロジェクトでの選択理由**: (1) 既存 `frontend/src/mocks/handlers.ts` が Orval 生成 handler (`generatedHandlers`) と Orval-default mock (`getDefaultMock()`) を合成する MSW パイプを採用済みで、Vitest（jsdom）+ Cypress dev サーバ + `npm run dev` の 3 経路を単一 handler で覆える L3 既存親和性が圧倒的（MSW=5 / nock=2 / axios-mock-adapter=3）。(2) 親戦略書 §1 の Orval + OpenAPI examples パイプ（§2.9）との接続点が公式レシピとして提供されており、L8 エコシステムも MSW 優位（5 vs 3 vs 2）。(3) Service Worker レイヤでの可視化が PR レビュー時の「どの API が叩かれたか」を追いやすく、学習サンプル集としての教材価値が高い
+- **学習者向けメモ**: 以下の場合は nock / axios-mock-adapter への切り替えが選択肢になる: (a) **nock**: Node CLI ツール（SSR / バッチ / npm script）から外部 API を叩くテストを書きたく、ブラウザ実行を一切伴わない場合。`nockBack` の record/replay で実 API レスポンスをスナップショット化する学習にも適する。(b) **axios-mock-adapter**: axios で完結する SPA で Service Worker を導入したくない（GitHub Pages 等で `mockServiceWorker.js` の配置が難しい）か、テスト内で `mock.history.post` を使った詳細なリクエストアサーションを最短コードで書きたい場合。どちらも「介入レイヤを 1 つに絞る単純さ」が学習の入口に向くが、Cypress dev / Storybook / GraphQL に拡張する局面で MSW へ戻す前提で採用する
 
 #### 2.4.3 プロトタイプ設計
 
-該当なし。
+該当なし（比較サンプル列が `—` のため、nock 版 / axios-mock-adapter 版 spec は作らない）。採否は §2.4.2 まで。
 
 ### 2.5 E2E: Cypress vs Playwright vs WebdriverIO
 
