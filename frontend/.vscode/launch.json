@@ -27,11 +27,7 @@
       "request": "attach",
       "port": 9222,
       "webRoot": "${workspaceFolder}/frontend",
-      "sourceMaps": true,
-      "sourceMapPathOverrides": {
-        "webpack:///./*": "${webRoot}/*",
-        "webpack:///src/*": "${webRoot}/src/*"
-      }
+      "sourceMaps": true
     },
     {
       "name": "Cypress: debug plugin/node side",
