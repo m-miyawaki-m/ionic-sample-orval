@@ -167,11 +167,34 @@ weighted_score = Σ(score_i × weight_i) / Σ(weight_i where score_i ≠ NA)
 
 #### 2.2.1 採点表
 
-`(後続 plan で埋める。VTU と Testing Library を 8 軸で採点)`
+| 軸 | @vue/test-utils | 根拠 | Testing Library (Vue) | 根拠 |
+|---|---|---|---|---|
+| L1 学習コスト | 5 | 公式 (test-utils.vuejs.org) が Vue 公式で `mount` / `find` / `trigger` の 3 概念から入れる。既存 `useDemoSdk.spec.ts` でも初学者向け雛形が完成済み | 4 | 公式 (testing-library.com) は短いが `getByRole` 等の a11y セレクタ思想に慣れる学習コストが乗る（公式 + 体感） |
+| L2 ドキュメント | 4 | Vue 公式 + 日本語含む Vue/Vite 記事が多数。Migration / Cookbook 完備（公式） | 4 | DOM Testing Library から派生で記事資産は厚いが、Vue 版 (testing-library/vue) の日本語記事は VTU より少なめ（公式 + 体感） |
+| L3 既存親和性 | 5 | 既存 devDependencies に `@vue/test-utils ^2.4.10` あり、`frontend/src/composables/__tests__/useDemoSdk.spec.ts` で `mount` / `flushPromises` を実利用中 | 3 | 別 dep 追加 (`@testing-library/vue` + `@testing-library/jest-dom`) が必要。内部的に VTU を使うため二重採用となる（公式: "built on top of @vue/test-utils"） |
+| L4 デバッグ体験 | 3 | 失敗時のセレクタヒントは Vue インスタンス志向で薄い。`wrapper.html()` で DOM ダンプは可能だが手動（体感） | 5 | 失敗時に "Unable to find element with role" 等の構造化ヒントと候補 DOM ダンプを自動表示（公式 + 体感） | 
+| L5 VSCode 統合 | 5 | Vitest Explorer / Debug Lens 経由で Run/Debug 完備。VTU 固有設定なし（既存設定で動作） | 5 | 同上。テストランナー側に依存するため VTU と同点（体感） |
+| L6 保守性 | 5 | Vue 公式が直接メンテ、Vue 3 系列マイナー追従が即時。v2.4.x が現行で月次パッチ（公式 GitHub） | 4 | testing-library 組織下で活発だが、Vue 版は内部の VTU メジャー追従に 1 拍遅れる傾向（体感 + GitHub release） |
+| L7 実行速度 | 5 | Vitest + jsdom 上で Vue 描画のみ、watch 即時。既存 spec 9 ケースが秒以下で完了（体感） | 5 | 同一の Vitest + jsdom レイヤで動作するため実測差はほぼなし（体感） |
+| L8 エコシステム | 4 | Vue 公式 + Vitest Browser Mode / coverage 等と直接統合。レポータは Vitest 側に依存（公式） | 4 | `@testing-library/jest-dom` の豊富なマッチャ、`@testing-library/user-event` 等の周辺が厚い（公式） |
+| **総合（加重平均）** | **4.51** | — | **4.19** | — |
+
+> 計算例 (VTU): 分子 = 5×1.5 + 4×1.5 + 5×1.5 + 3×1.2 + 5×1.2 + 5×1.0 + 5×1.0 + 4×1.0 = 7.5 + 6.0 + 7.5 + 3.6 + 6.0 + 5.0 + 5.0 + 4.0 = **44.6**、分母 = 1.5×3 + 1.2×2 + 1.0×3 = **9.9**、44.6 / 9.9 ≈ **4.51**（判定: 優秀）
+> 計算例 (TL):  分子 = 4×1.5 + 4×1.5 + 3×1.5 + 5×1.2 + 5×1.2 + 4×1.0 + 5×1.0 + 4×1.0 = 6.0 + 6.0 + 4.5 + 6.0 + 6.0 + 4.0 + 5.0 + 4.0 = **41.5**、分母 = **9.9**、41.5 / 9.9 ≈ **4.19**（判定: 良好）
+
+> ※ 上の総合スコア（4.51 / 4.19）は「公開資料 + 既存 spec 体感」を根拠とする暫定値。判定はそれぞれ「優秀」「良好」で、両者とも本書 §1.3 判定区分の上位帯に入る — 本プロジェクトでの実採否（VTU 採用 / TL は §2.2.3 の比較サンプル）は L3 既存親和性の差（5 対 3）に由来し、客観評価の優劣だけで決まったわけではない。
 
 #### 2.2.2 採否解説
 
-`(後続 plan で埋める)`
+- **合意点**: 両者とも Vue 3 SFC の `mount` / `render`、ユーザイベント発火（VTU は `wrapper.trigger`、TL は `@testing-library/user-event`）、`@testing-library/jest-dom` 互換マッチャ、`flushPromises` / `findBy*` による非同期待機を備える。公式ドキュメントでも明記されているとおり、TL は内部的に VTU を呼び出すため両者の最終的な描画レイヤは同一
+- **差分**:
+  - L1 学習コスト: VTU は Vue インスタンス志向の API（`findComponent` / `vm`）が直感的で本リポジトリの既存 spec と同型。TL は a11y 志向で `getByRole` / `getByLabelText` の選定指針を別途学ぶ必要があるが、ブラウザ UA 視点でテストが書ける
+  - L3 既存親和性: VTU は既存 `frontend/package.json` の devDependencies (`@vue/test-utils ^2.4.10`) と既存 spec (`useDemoSdk.spec.ts`) でそのまま使える。TL は別 dep を追加し、内部で VTU を呼ぶ二重採用となる
+  - L4 デバッグ体験: TL は失敗時に「ロールで見つからない / 候補は X 個」など構造化された a11y ツリーを自動でダンプする点で優位。VTU は `wrapper.html()` を手動で出す必要がある
+  - L6 保守性: VTU は Vue 公式（vuejs.org 直下リポジトリ）でメジャーバージョンの追従が早い。TL の Vue 版は VTU を依存に持つため、VTU のメジャー差分を待ってから追従する分だけ 1 拍遅れる
+  - L7 / L8: 実行速度・エコシステム拡張は実質同等（同じ Vitest + jsdom 上で動くため）
+- **本プロジェクトでの選択理由**: 親戦略書 §1 で VTU を採用、TL は `__samples__/comparison/testing-library/` 配下に 1 本だけ比較サンプルとして残す方針。決定の根拠は (1) L3 既存親和性の差 5 vs 3（既存 dep / 既存 spec 雛形をそのまま流用できる）、(2) TL の優位軸である L4 デバッグ体験は §2.2.3 プロトタイプ仕様で「同一シナリオを 2 種類のセレクタで書き比べる」サンプルとして残せば学習効果が得られる、の 2 点。客観評価では VTU 4.51 (優秀) / TL 4.19 (良好) と両者とも上位帯のため、TL を「学習サンプル枠で残す」判断は妥当
+- **学習者向けメモ**: 以下のいずれかに該当する場合は TL への切り替えを検討する余地がある: (a) アクセシビリティ要件（WAI-ARIA ロール / ラベル）をテストで担保したい、(b) React Testing Library から合流した開発者がチームに加わる、(c) E2E（Cypress / Playwright）と同じ「ユーザ視点セレクタ」をユニットテストでも揃えたい。本プロジェクトでは §2.2.3 の比較サンプル 1 本でこれらの感触を体験できるよう設計してある
 
 #### 2.2.3 プロトタイプ設計
 
