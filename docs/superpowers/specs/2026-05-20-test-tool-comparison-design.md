@@ -384,17 +384,45 @@ WebdriverIO は比較サンプル枠外（採点のみ）。
 
 ### 2.7 Android SDK ランナー: Gradle JVM unit + Espresso
 
+本節は単独カテゴリ内で「Gradle wrapper (JVM unit) + Espresso (instrumented)」の**複合採用**を扱う特殊節。比較サンプル列・不採用候補列はともに `—` のため、2 候補（Gradle JVM unit / Espresso instrumented）をそれぞれ 8 軸で採点し、補完関係としての採用根拠を §2.7.2 で示す。
+
 #### 2.7.1 採点表
 
-`(後続 plan で埋める。AAR 内 JVM unit と Espresso instrumented をそれぞれ 8 軸で採点。L7 実行速度は Espresso のみ「実機/エミュレータ起動コスト」を含めた採点に注記する)`
+| 軸 | Gradle JVM unit | 根拠 | Espresso instrumented | 根拠 |
+|---|---|---|---|---|
+| L1 学習コスト | 4 | `testImplementation "junit:junit:$junitVersion"` 1 行で導入、`@Test` / `assertEquals` の純 JUnit4 概念だけで書き始められる。Java/Kotlin 開発者前提だが Android 固有 API は不要（公式 developer.android.com/training/testing/local-tests + 既存 `frontend/android/demo-sdk/build.gradle`） | 2 | ViewMatchers / ViewActions / ViewAssertions の DSL に加え、AVD 構築・`testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"`・IdlingResource の同期制御を学ぶ必要があり「最初の 1 本」まで距離が長い（公式 developer.android.com/training/testing/espresso + 体感） |
+| L2 ドキュメント | 4 | Android Developers `local-unit-tests` ガイドが章立てで揃い、JUnit4 自体は 15 年級の蓄積で日本語記事・StackOverflow 解答が豊富。ただし AAR ライブラリモジュール（`com.android.library`）固有のレシピは Application モジュール比でやや薄い（公式 + 体感） | 4 | developer.android.com の Espresso チートシート + cookbook + samples リポジトリが公式メンテで、日本語記事も Android アプリ開発文脈で一定数蓄積。AndroidX Test 移行ガイドも整備済み（公式 + 体感） |
+| L3 既存親和性 | 5 | 既存 `frontend/android/demo-sdk/build.gradle` に `testImplementation "junit:junit:$junitVersion"` が既に記載済み、`src/test/` ディレクトリも存在。親戦略書 §1 の AAR 採用方針（`com.android.library` プラグイン + `copyAarToApp` タスク）とそのまま整合し、ゼロ手数で `DemoSdkTest.kt` を追加できる（既存コード） | 4 | 既存 `frontend/android/app/build.gradle` に `androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"` + `testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"` が記載済み、`src/androidTest/` も存在。親戦略書 §1 / §4.5 の「Espresso 1 ケース限定」運用方針と整合するが、AVD 構築（Open Items #3）と `connectedAndroidTest` タスク経路は別途整備が必要（既存コード + 親戦略書 §4.5） |
+| L4 デバッグ体験 | 4 | 通常 JVM デバッガでブレークポイント / ステップ実行 / 変数監視が完備、スタックトレースが標準 Java で読みやすい。失敗時は `ComparisonFailure` の expected/actual 表示が直感的（体感） | 3 | 実機/エミュ越しのブレークポイントは付けられるが、UI 描画の確認は UiAutomation 経由のスクショ + logcat が中心。`onView(...).check(matches(...))` 失敗時の DOM ダンプ相当が「View hierarchy」テキストで出るが Vue/jsdom ほど読みやすくはない（公式 + 体感） |
+| L5 VSCode 統合 | 4 | `vscjava.vscode-java-test` の Run/Debug lens が Gradle JUnit テストに対応、`vscjava.vscode-gradle` で個別タスク起動も可能。親戦略書 §3.1 / §4.3 で導入予定の Java Pack 拡張群でカバー（親戦略書 §3.1） | 3 | `vscjava.vscode-gradle` から `:app:connectedAndroidTest` タスクを起動可能だが、Run/Debug lens の密度は JVM unit より低い。Espresso 専用の VSCode 拡張は事実上なく、Android Studio 側に最適化されている（親戦略書 §4.4 + 体感） |
+| L6 保守性 | 5 | JUnit4 は枯れた安定 API でメジャー破壊なし、Gradle / Android Gradle Plugin (AGP) の追従も継続。`com.android.library` プラグイン側で AGP マイナー追従に乗れば JUnit テストは原則そのまま動作する（公式 GitHub releases） | 4 | AndroidX Test (`androidx.test.espresso`) は Google が active メンテで月次〜四半期マイナー、`espresso-core` v3.x で API 安定。Compose UI Test との棲み分け移行はあるが View ベース Espresso は引き続きサポート対象（公式 GitHub releases） |
+| L7 実行速度 | 5 | 純 JVM 実行で外部 SDK / エミュ不要、`./gradlew :demo-sdk:test` の cold start は数秒、watch 相当は IDE の incremental compile に依存して秒オーダー。既存 `demo-sdk` モジュールは依存が `androidx.core:core-ktx` + JUnit のみで軽量（体感） | 2 | **起動コスト含む**: AVD cold boot 30-60 秒 + APK インストール 5-15 秒 + テスト実行で 1 ケースでも分オーダー（公式 + 親戦略書 §4.5）。**起動コスト除く**: Espresso 自体は IdlingResource ベースで同期化されており、エミュ常駐後の 1 ケース実行は数秒〜十数秒で安定（体感）。本プロジェクトは「1 ケース限定」運用のため CI / ローカルとも起動コストが支配的 |
+| L8 エコシステム | 4 | Gradle 標準の HTML レポート (`build/reports/tests/test/index.html`) と JUnit XML (`build/test-results/test/*.xml`) が 1st-class、JaCoCo カバレッジ・Mockito / MockK / Robolectric などの周辺ツールが厚い（親戦略書 §5.1 + 公式） | 4 | `connectedAndroidTest` の HTML レポート、`additional_output/*.png` の自動スクショ、`screenrecord` の MP4 取得、Firebase Test Lab / Sauce Labs / BrowserStack のクラウド実行連携が公式提供。Vitest HTML / Cypress mochawesome と並ぶエビデンスチャネルとして親戦略書 §5.1 で位置付け済み（親戦略書 §5.1 + 公式） |
+| **総合（加重平均）** | **4.35** | — | **3.25** | — |
+
+> 計算例 (Gradle JVM unit): 分子 = 4×1.5 + 4×1.5 + 5×1.5 + 4×1.2 + 4×1.2 + 5×1.0 + 5×1.0 + 4×1.0 = 6.0 + 6.0 + 7.5 + 4.8 + 4.8 + 5.0 + 5.0 + 4.0 = **43.1**、分母 = 1.5×3 + 1.2×2 + 1.0×3 = **9.9**、43.1 / 9.9 ≈ **4.35**（判定: 良好）
+> 計算例 (Espresso instrumented): 分子 = 2×1.5 + 4×1.5 + 4×1.5 + 3×1.2 + 3×1.2 + 4×1.0 + 2×1.0 + 4×1.0 = 3.0 + 6.0 + 6.0 + 3.6 + 3.6 + 4.0 + 2.0 + 4.0 = **32.2**、分母 = **9.9**、32.2 / 9.9 ≈ **3.25**（判定: 要注意）
+
+> ※ 上の総合スコア（4.35 / 3.25）は「公開資料（developer.android.com / AndroidX Test GitHub）+ 既存 `frontend/android/demo-sdk/build.gradle` + 既存 `frontend/android/app/build.gradle` 体感」を根拠とする暫定値。本カテゴリは比較サンプル / 不採用候補がなく「両者ともプロジェクトで採用」する複合採用枠のため、客観スコアの高低で採否は決まらない — 親戦略書 §1 / §4.5 の「JVM unit で数を稼ぎ、Espresso は実機ブリッジ往復の検証 1 ケースに限定する」補完関係を §2.7.2 で解説する。Espresso の判定「要注意」は L1（2）と L7 起動コスト（2）に引きずられた結果であり、「単独採用には弱いが、補完運用なら最適」という §1.3 判定区分どおりの位置付け。
 
 #### 2.7.2 採否解説
 
-`(後続 plan で埋める)`
+- **合意点**: 両者とも Gradle + JUnit4 系で統一されており、`./gradlew test` (JVM unit) / `./gradlew connectedAndroidTest` (Espresso) のタスク経路を共有する。`@Test` / `@Before` / `@After` / `assertEquals` / `assertThrows` の JUnit4 API が同型で、テストクラスのファイル配置（`src/test/` vs `src/androidTest/`）と `testInstrumentationRunner` 設定の差以外は学習者にとって「同じ JUnit を書く」体験になる。HTML レポート出力（`build/reports/...`）と JUnit XML 出力（`build/test-results/.../*.xml`）も Gradle 標準として揃い、親戦略書 §5.1 のエビデンス表で 1 行ずつ独立してリストされる
+- **差分** (L# 明示):
+  - **L1 学習コスト**: Gradle JVM unit（4）は JUnit4 の `@Test` / `assertEquals` の 2 概念で書き始められるのに対し、Espresso instrumented（2）は ViewMatchers / ViewActions / ViewAssertions の DSL 3 概念 + AVD 構築 + `testInstrumentationRunner` 設定 + IdlingResource 同期制御まで含めて学ぶ必要があり、最初の 1 本までの距離が大きく異なる
+  - **L7 実行速度**: Gradle JVM unit（5）は純 JVM で秒オーダー、テスト本数を増やしても線形で済む。Espresso instrumented は **起動コスト含む採点で 2**（AVD cold boot 30-60s + APK install + 実行で分オーダー）、起動コスト除けば 4 相当（1 ケース実行は十数秒）。本プロジェクトは「1 ケース限定」運用のため起動コストが支配的になり、含む採点を採用
+  - **L4 デバッグ体験**: JVM unit（4）は通常 JVM デバッガでブレークポイント / ステップ実行が完備、スタックトレースが標準 Java で読みやすい。Espresso（3）は実機越しのブレークポイントは付けられるが、UI 確認が UiAutomation 経由スクショ + logcat 中心で 1 段見劣りする
+  - **L5 VSCode 統合**: JVM unit（4）は Java Test Runner 拡張の Run/Debug lens が密に統合される一方、Espresso（3）は Gradle タスク経由起動が中心で lens 密度は低い。Android Studio 側に最適化されている分 VSCode 完結方針（親戦略書 §3.1）と僅かに齟齬が出る
+  - **L3 既存親和性**: 両者とも既存 `build.gradle` に必要な dep が記載済みで 4-5 点圏。`demo-sdk` モジュール（JVM unit=5）は `com.android.library` プラグイン + AAR 採用方針と完全整合、`app` モジュール（Espresso=4）も `androidTestImplementation` + `testInstrumentationRunner` が整備済みで、残るは AVD 設定（§5 Open Items #3）のみ
+- **本プロジェクトでの選択理由**: 親戦略書 §1 / §4.5 の「Gradle JVM unit で AAR 内ロジックの数を稼ぎ、Espresso は実機ブリッジ往復の検証 1 ケースに限定する」**補完関係**による複合採用。(1) JVM unit は L1 / L7 / L5 で軽量・高速・VSCode 完結のため Markdown 決定表 → `@MethodSource` の it.each 展開（親戦略書 §3.3）と相性が良く、ケース数を増やしてもコストが線形に収まる。(2) Espresso は L7 が分オーダーで重いが「実機/エミュで Capacitor プラグイン経由のブリッジ往復が本当に動くか」を担保する唯一の経路で、客観評価「要注意」帯でも 1 ケースに限定すれば学習サンプル集としての必要十分性を確保できる。(3) 両者とも JUnit4 + Gradle で API が揃うため、学習者が「JVM unit のテストを Espresso instrumented にコピーして書き換える」横展開が容易で、教材構成上も自然。客観評価では JVM unit=4.35（良好）/ Espresso=3.25（要注意）と単独スコアには差があるが、補完運用前提で両者採用は妥当
+- **学習者向けメモ**:
+  - **JVM unit を使う場面**: AAR 内ロジック（純 Java/Kotlin の関数・データ変換・状態遷移）を Markdown 決定表ベースで網羅したいとき。Android Framework に依存しない単体テストで、VSCode の Run/Debug lens から 1 クリック実行できる短いフィードバックループを学習に活かす。本プロジェクトでは `demo-sdk` モジュール内の振る舞いがここに集約される
+  - **Espresso を使う場面**: Capacitor プラグイン経由で `DemoSdkBridge.init` / `echo` がアプリ側 UI から呼び出され、結果が画面に表示されるまでの**ブリッジ往復**を実機/エミュで担保したいとき。本プロジェクトでは 1 ケースのみ（親戦略書 §4.5）で、L7 起動コストを払ってまで実機確認する価値があるシナリオに限定する
+  - **どちらを選ぶか迷ったら**: 「Android Framework / View / Activity / Intent / Service / Context.getResources()」のいずれかが必要なら Espresso、そうでなければ JVM unit。Android Framework 依存があるが実機が要らない中間ケースは Robolectric が選択肢になるが、本プロジェクトでは採用しない（親戦略書 §1 で言及なし、L1 学習コストを抑えるため）
 
 #### 2.7.3 プロトタイプ設計
 
-該当なし。比較サンプル列が `—`。
+該当なし（比較サンプル列が `—`、不採用候補列も `—` のため、別実装の spec を作る対象がない）。採否は §2.7.2 まで。
 
 ### 2.8 エビデンス: Vitest HTML / Cypress mochawesome / Gradle HTML / Espresso screenrecord
 
