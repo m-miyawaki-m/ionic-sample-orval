@@ -87,3 +87,22 @@ export function buildCases(spec: CaseSpec): BuiltCase[] {
     return out
   })
 }
+
+function targetToConst(target: string): string {
+  // composables/useDemoSdk#init -> useDemoSdkInitCases
+  const m = /([A-Za-z0-9_]+)#([A-Za-z0-9_]+)$/.exec(target)
+  if (!m) throw new Error(`cannot derive const name from target: ${target}`)
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+  return m[1] + cap(m[2]) + 'Cases'
+}
+
+const AUTO_HEADER_C = '// AUTO-GENERATED – do not edit'
+
+export function renderVitestCasesTs(target: string, cases: BuiltCase[]): string {
+  const name = targetToConst(target)
+  return `${AUTO_HEADER_C}
+// source target: ${target}
+export const ${name} = ${JSON.stringify(cases, null, 2)} as const
+export type ${name[0].toUpperCase() + name.slice(1).replace(/Cases$/, 'Case')} = (typeof ${name})[number]
+`
+}

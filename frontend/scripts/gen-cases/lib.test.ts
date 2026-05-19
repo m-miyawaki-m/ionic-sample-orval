@@ -94,3 +94,16 @@ out: { ts: o.ts }
     ])
   })
 })
+
+import { renderVitestCasesTs } from './lib'
+
+describe('renderVitestCasesTs', () => {
+  it('emits a typed array literal named after the target', () => {
+    const ts = renderVitestCasesTs('composables/useDemoSdk#init', [
+      { id: 'C1', input: { apiKey: 'valid' } } as any
+    ])
+    expect(ts).toContain('// AUTO-GENERATED – do not edit')
+    expect(ts).toContain('export const useDemoSdkInitCases =')
+    expect(ts).toContain('"id": "C1"')
+  })
+})
