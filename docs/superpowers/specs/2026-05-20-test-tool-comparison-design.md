@@ -601,45 +601,51 @@ WebdriverIO は比較サンプル枠外（採点のみ）。
 
 ## 3. 総合スコアサマリ
 
-採点完了時点で以下 4 表が埋まる。本書時点では §2.1 のみ採点済み（見本）であり、§2.2-§2.11 の埋め込みは後続 plan の作業。
+§2.1-§2.11 の採点を集約。複合採用カテゴリ（7. Android SDK / 8. エビデンス）は §2.7 / §2.8 で採点した代表値または併記値を転記している。
 
 ### 3.1 採用品の総合スコア
 
 | カテゴリ | 採用 | 総合スコア | 判定 |
 |---|---|---|---|
 | 1. ランナー | Vitest | 4.75 | 優秀 |
-| 2. コンポーネント API | @vue/test-utils | TBD | TBD |
-| 3. DOM 環境 | jsdom | TBD | TBD |
-| 4. HTTP モック | MSW | TBD | TBD |
-| 5. E2E | Cypress | TBD | TBD |
-| 6. ブリッジモック | vi.mock | TBD | TBD |
-| 7. Android SDK | Gradle + Espresso | TBD | TBD |
-| 8. エビデンス | （複合） | TBD | TBD |
-| 9. 設計書連係（API） | OpenAPI examples | TBD | TBD |
-| 10. 設計書連係（UI/SDK） | Markdown 決定表 | TBD | TBD |
-| 11. 雛形生成 | plop | TBD | TBD |
+| 2. コンポーネント API | @vue/test-utils | 4.51 | 優秀 |
+| 3. DOM 環境 | jsdom | 4.56 | 優秀 |
+| 4. HTTP モック | MSW | 4.73 | 優秀 |
+| 5. E2E | Cypress | 4.58 | 優秀 |
+| 6. ブリッジモック | vi.mock | 4.51 | 優秀 |
+| 7. Android SDK | Gradle JVM unit + Espresso instrumented | 4.35 / 3.25 | 良好 / 要注意（補完運用、§2.7 採否解説参照） |
+| 8. エビデンス | Vitest HTML / Cypress mochawesome / Gradle HTML / Espresso screenrecord（複合） | 4.35 | 良好 |
+| 9. 設計書連係（API） | OpenAPI examples 拡張 | 4.76 | 優秀 |
+| 10. 設計書連係（UI/SDK） | Markdown 決定表 → it.each | 4.63 | 優秀 |
+| 11. 雛形生成 | plop | 4.08 | 良好 |
+
+**観察**: 採用品は 11 カテゴリすべてで 4.0 以上（良好以上）。Espresso instrumented のみ 3.25（要注意）だが、§2.7 採否解説のとおり Gradle JVM unit との補完運用を前提とした「実機検証 1 ケース限定」の位置づけが採点を下げている。単独採用ではなく複合採用としての評価では妥当範囲。
 
 ### 3.2 比較サンプル品の総合スコア
 
 | カテゴリ | 比較サンプル | 総合スコア | 判定 |
 |---|---|---|---|
-| 2. コンポーネント API | Testing Library | TBD | TBD |
-| 5. E2E | Playwright | TBD | TBD |
-| 6. ブリッジモック | Capacitor 公式 mock | TBD | TBD |
+| 2. コンポーネント API | Testing Library (Vue) | 4.19 | 良好 |
+| 5. E2E | Playwright | 4.42 | 良好 |
+| 6. ブリッジモック | Capacitor 公式 mock | 4.12 | 良好 |
+
+**観察**: 3 候補とも 4.0 以上「良好」帯。採用品との差は最大でも 0.39（§2.6 vi.mock 4.51 vs Capacitor 公式 4.12）と小さく、比較サンプルとして並べる学習価値が定量的に裏付けられている。
 
 ### 3.3 不採用候補の総合スコア
 
 | カテゴリ | 不採用候補 | 総合スコア | 判定 |
 |---|---|---|---|
 | 1. ランナー | Jest | 3.85 | 良好（本プロジェクトでは §2.1.2 のとおり不採用） |
-| 3. DOM 環境 | happy-dom | TBD | TBD |
-| 4. HTTP モック | nock | TBD | TBD |
-| 4. HTTP モック | axios-mock-adapter | TBD | TBD |
-| 5. E2E | WebdriverIO | TBD | TBD |
-| 8. エビデンス | Cypress 動画録画 | TBD | TBD |
-| 9. 設計書連係（API） | 独立 YAML/JSON | TBD | TBD |
-| 10. 設計書連係（UI/SDK） | Gherkin | TBD | TBD |
-| 11. 雛形生成 | hygen | TBD | TBD |
+| 3. DOM 環境 | happy-dom | 3.68 | 良好 |
+| 4. HTTP モック | nock | 3.68 | 良好 |
+| 4. HTTP モック | axios-mock-adapter | 3.53 | 良好 |
+| 5. E2E | WebdriverIO | 3.30 | 要注意 |
+| 8. エビデンス | Cypress 動画録画 | 3.20 | 要注意 |
+| 9. 設計書連係（API） | 独立 YAML/JSON データシート | 2.70 | 要注意 |
+| 10. 設計書連係（UI/SDK） | Gherkin (.feature) | 3.30 | 要注意 |
+| 11. 雛形生成 | hygen | 3.05 | 要注意 |
+
+**観察**: 9 候補中 4 つ（Jest / happy-dom / nock / axios-mock-adapter）が「良好」帯。残り 5 つが「要注意」帯。「不適」（< 2.5）に落ちた候補はなし。§3.4 で詳述。
 
 ### 3.4 観察された傾向と学習者向けガイド
 
