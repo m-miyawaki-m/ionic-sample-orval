@@ -166,8 +166,8 @@ out:
 
 | スクリプト | 入力 | 出力 | 起動 |
 |---|---|---|---|
-| `scripts/gen-fixtures.ts` | `openapi/openapi.yaml` | `src/mocks/generated/*` + `tests/e2e/fixtures/*` | `npm run gen:fixtures`（`npm run gen` のサブステップ化） |
-| `scripts/gen-cases.ts` | `docs/specs/cases/*.md` | `**/*.cases.generated.ts` + `demo-sdk/.../resources/cases/*.json` | `npm run gen:cases` |
+| `frontend/scripts/gen-fixtures/cli.ts` | `openapi/openapi.yaml` | `frontend/src/mocks/generated/*` + `frontend/tests/e2e/fixtures/*` | `npm run gen:fixtures` |
+| `frontend/scripts/gen-cases/cli.ts`    | `docs/specs/cases/*.md` | `**/*.cases.generated.ts` (+ `demo-sdk/.../resources/cases/*.json` in P5) | `npm run gen:cases` |
 
 - いずれも**冪等**（出力先を全削除 → 再生成）
 - 生成ファイルには `// AUTO-GENERATED – do not edit` ヘッダ
@@ -437,9 +437,10 @@ ionic-sample-orval/
 │           ├─ useDemoSdk.init.md
 │           ├─ useDemoSdk.echo.md
 │           └─ ...
-├─ scripts/
-│   ├─ gen-fixtures.ts                         # OpenAPI → fixtures
-│   └─ gen-cases.ts                            # MD → it.each + JUnit JSON
+├─ scripts/                                    # repo-root .cmd orchestration (existing)
+└─ frontend/scripts/                           # TS generators live with the FE toolchain
+    ├─ gen-fixtures/{lib,cli}.ts               # OpenAPI → fixtures
+    └─ gen-cases/{lib,cli}.ts                  # MD → it.each (JUnit JSON branch lands in P5)
 ├─ plop/
 │   ├─ plopfile.mjs
 │   └─ templates/                              # §5.5
