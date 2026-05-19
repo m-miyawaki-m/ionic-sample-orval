@@ -10,7 +10,8 @@
     "test:e2e": "cypress run",
     "test:unit": "vitest",
     "lint": "eslint .",
-    "gen": "orval --config ./orval.config.ts"
+    "gen": "orval --config ./orval.config.ts",
+    "gen:fixtures": "tsx scripts/gen-fixtures/cli.ts"
   },
   "dependencies": {
     "@capacitor/android": "5.7.8",
