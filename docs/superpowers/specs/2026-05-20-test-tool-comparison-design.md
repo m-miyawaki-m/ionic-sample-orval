@@ -339,11 +339,34 @@ WebdriverIO は比較サンプル枠外（採点のみ）。
 
 #### 2.6.1 採点表
 
-`(後続 plan で埋める)`
+| 軸 | vi.mock パターン | 根拠 | Capacitor 公式 mock パターン | 根拠 |
+|---|---|---|---|---|
+| L1 学習コスト | 5 | `vi.mock('@/native/demo-sdk-bridge', () => ({...}))` + 必要なら `vi.hoisted` の 2 概念で書き始められる。既存 `useDemoSdk.spec.ts` がそのまま雛形になる（公式 vitest.dev/api/vi.html + 既存コード） | 3 | `WebPlugin` 継承 + `DemoSdkBridgePlugin` interface 実装 + `registerPlugin` 再呼び出しの 3 概念を学ぶ必要あり。公式の "EchoPlugin" サンプルから派生させる手順を踏む（公式 capacitorjs.com/docs/plugins/web + 体感） |
+| L2 ドキュメント | 4 | Vitest 公式 `vi.mock` 章が hoisting / factory / `importOriginal` / `spy: true` まで網羅、Jest 互換で日本語記事資産も流用可能。ただし `vi.hoisted` の落とし穴説明はやや難（公式 + 体感） | 3 | Capacitor 公式 `Plugin > Web` ガイドは Web 実装の書き方を示すが「テスト用 mock」の節は薄く、`registerPlugin` をテスト内で呼び直す具体例は Discord / GitHub Discussion 散在（公式 + 体感） |
+| L3 既存親和性 | 5 | 既存 `frontend/src/composables/__tests__/useDemoSdk.spec.ts` で `vi.mock('@/native/demo-sdk-bridge') + vi.hoisted` パターンが稼働中。9 ケースが既にこの形式で書かれており追加学習コストゼロ（既存コード） | 4 | 既存 `frontend/src/native/demo-sdk-bridge/{index,definitions}.ts` の `DemoSdkBridgePlugin` interface + `registerPlugin` 構成にそのまま乗る。Capacitor 流儀との整合は良いが、テスト spec 側の雛形は新規作成（既存コード + 公式） |
+| L4 デバッグ体験 | 3 | hoisting で書き順を直感に反して読まされる、`tsconfig.json` の `paths` エイリアスが factory 内で解決されない、factory の返り値は型推論されず手動キャスト必要 — 失敗時の原因切り分けに 1 段追加情報が要る（公式 caveat + 体感） | 4 | `DemoSdkBridgePlugin` interface 実装側で型補完が効き、未実装メソッドは `this.unimplemented()` で明示的に落とせる。`Unavailable` / `Unimplemented` の標準エラーパターンが Capacitor 全体で揃う（公式） |
+| L5 VSCode 統合 | 5 | Vitest Explorer / Debug Lens 経由で Run/Debug 完備、vi.mock 固有設定なし（体感） | 5 | 同上。Vitest ランナー側に依存するため vi.mock と同点（体感） |
+| L6 保守性 | 5 | Vitest は月次マイナーで `vi.mock` API は v0.x→v1.x→v3.x を通じて後方互換を維持、`vi.hoisted` / `spy: true` 等の機能追加も非破壊（公式 GitHub releases） | 5 | `@capacitor/core` の `WebPlugin` / `registerPlugin` API は v3→v6 で安定継続、月次追従に乗る（公式 GitHub releases） |
+| L7 実行速度 | 5 | モジュール解決時に factory を実行して差し替えるだけで実行コスト極小、Vitest watch のフィードバックは秒以下（体感） | 5 | `registerPlugin` の戻り値オブジェクト差し替えだけで同じく軽量、vi.mock との実速度差はほぼなし（体感） |
+| L8 エコシステム | 4 | Vitest 公式 API として位置付け、Jest `jest.mock` 互換で Stack Overflow 解答多数。ただし Capacitor / Web Components 固有レシピは vi.mock 公式ドキュメント外（公式 + 体感） | 5 | Capacitor 全プラグイン（Geolocation / Camera / Filesystem 等）共通の Web fallback パターンで、実機 / Web / テストの 3 経路を同一の `WebPlugin` 派生クラスで統一できる。エコシステム横断の学習価値が高い（公式） |
+| **総合（加重平均）** | **4.51** | — | **4.12** | — |
+
+> 計算例 (vi.mock): 分子 = 5×1.5 + 4×1.5 + 5×1.5 + 3×1.2 + 5×1.2 + 5×1.0 + 5×1.0 + 4×1.0 = 7.5 + 6.0 + 7.5 + 3.6 + 6.0 + 5.0 + 5.0 + 4.0 = **44.6**、分母 = 1.5×3 + 1.2×2 + 1.0×3 = **9.9**、44.6 / 9.9 ≈ **4.51**（判定: 優秀）
+> 計算例 (Capacitor 公式 mock): 分子 = 3×1.5 + 3×1.5 + 4×1.5 + 4×1.2 + 5×1.2 + 5×1.0 + 5×1.0 + 5×1.0 = 4.5 + 4.5 + 6.0 + 4.8 + 6.0 + 5.0 + 5.0 + 5.0 = **40.8**、分母 = **9.9**、40.8 / 9.9 ≈ **4.12**（判定: 良好）
+
+> ※ 上の総合スコア（4.51 / 4.12）は「公開資料（vitest.dev/api/vi.html / capacitorjs.com/docs/plugins/web）+ 既存 `useDemoSdk.spec.ts` 体感」を根拠とする暫定値。本プロジェクトでの実採否（vi.mock 採用 / Capacitor 公式 mock を比較サンプルで残置）は L1 学習コスト（5 対 3）と L3 既存親和性（5 対 4）の差に由来し、Capacitor 公式 mock も客観評価では「良好」帯（4.12）の上位に届く — §1.3 の原則どおり「採用」と「比較サンプル枠で残す」の差は学習導線の短さで決まる。
 
 #### 2.6.2 採否解説
 
-`(後続 plan で埋める)`
+- **合意点**: 両者とも `DemoSdkBridge.echo` / `init` / `addListener` 等のプラグイン API をテストから差し替えてシナリオを制御でき、`vi.fn()` ベースの呼び出し回数 / 引数アサーション、`mockResolvedValueOnce` / `mockRejectedValueOnce` での正常系/異常系の切り替え、`addListener` 経由のイベントコールバック発火、TypeScript 型定義の維持を備える。`@capacitor/core` の `PluginListenerHandle` 構造（`{ remove() }`）を返す挙動も両者で再現できる
+- **差分**:
+  - L1 学習コスト: **vi.mock** は `vi.mock('@/native/demo-sdk-bridge', () => ({...}))` の 1 関数呼び出しで書け、既存 spec の雛形をコピーすれば即動く（5）。**Capacitor 公式 mock** は `class FakeDemoSdkBridgeWeb extends WebPlugin implements DemoSdkBridgePlugin { ... }` の継承 + `registerPlugin(PLUGIN_NAME, { web: () => new FakeDemoSdkBridgeWeb() })` の再登録の 2 段階で、Capacitor のプラグイン仕組み全体を学ぶ必要がある（3）
+  - L3 既存親和性: vi.mock は既存 `useDemoSdk.spec.ts` で `vi.mock + vi.hoisted` パターンが稼働中（5）。Capacitor 公式 mock は既存 `frontend/src/native/demo-sdk-bridge/{index,definitions}.ts` の `registerPlugin<DemoSdkBridgePlugin>(PLUGIN_NAME)` 構成と整合するが、テスト spec 側の雛形は新規作成（4）
+  - L4 デバッグ体験: vi.mock は hoisting で書き順が直感に反する / `tsconfig` の `paths` エイリアスが factory 内で解決されない / factory の返り値が型推論されず手動キャストになる、という 3 つの落とし穴がある（3）。Capacitor 公式 mock は `DemoSdkBridgePlugin` interface 実装側で型補完が効き、未実装メソッドは `this.unimplemented()` で `Unimplemented` エラーとして明示的に落とせるため失敗位置が読みやすい（4）
+  - L8 エコシステム: vi.mock は Vitest 公式 API 内に閉じる（4）。Capacitor 公式 mock は Geolocation / Camera / Filesystem など全プラグインで同じ `WebPlugin` 派生パターンが使えるため、本プロジェクト以外の Capacitor プロジェクトへ学習が横展開できる（5）
+  - **モック粒度の差**: vi.mock は「モジュール全体を factory の戻り値で全置換」する粗粒度。Capacitor 公式 mock は「`registerPlugin` の `web` ファクトリを差し替えてプラグイン実装クラスをすげ替える」細粒度で、`@capacitor/core` の他 API（`Capacitor.isNativePlatform()` など）はそのまま動く。テストでブリッジ以外の Capacitor API を併用したい場合に差が出る
+- **本プロジェクトでの選択理由**: (1) **学習導線が短い**ことを最優先。既存 `useDemoSdk.spec.ts` が `vi.mock + vi.hoisted` パターンの完成形雛形になっており、新しい spec を書く学習者は「コピーして mockResolvedValueOnce を書き換える」だけで開始できる。L1 学習コスト（5 対 3）と L3 既存親和性（5 対 4）の差がここに集約される。(2) 本プロジェクトの `DemoSdkBridge` はダメージ少なく単一プラグインで済み、Capacitor の他 API と組み合わせる複雑シナリオは現状のテスト範囲外のため、モジュール全置換の粗粒度で十分。(3) **公式手法との対比を学べる**ことを比較サンプル残置の理由とし、§2.6.3 プロトタイプ設計どおり `frontend/__samples__/comparison/capacitor-mock/useDemoSdk.echo.capmock.spec.ts` を 1 本だけ並走させて「同じ echo シナリオが 2 種類の mock パターンで書き分けられる」読み合わせ価値を確保する。客観評価では vi.mock=4.51（優秀）/ Capacitor 公式=4.12（良好）と両者とも上位帯のため、Capacitor 公式 mock を比較サンプル枠で残す判断は妥当
+- **学習者向けメモ**: 以下のいずれかに該当する場合は Capacitor 公式 mock パターンへの切り替えを検討する余地がある: (a) **型補完を最優先**したい — `DemoSdkBridgePlugin` interface 実装側で IDE のメソッド補完 / 引数型チェックを効かせ、vi.mock の factory 戻り値の手動キャストを避けたい場合、(b) **Web fallback と概念整合**させたい — 同一の `WebPlugin` 派生クラスを「実機未対応時の Web fallback」と「テストの mock」の両方に流用し、`registerPlugin(name, { web: () => new Impl() })` で 1 つの実装を二度使う運用にしたい場合、(c) **Capacitor 全プラグインで統一**したい — 将来 Geolocation / Camera / Filesystem 等の複数プラグインをテストし、それぞれ別の vi.mock factory を書くより `WebPlugin` 派生クラス群で揃えたほうがチーム内学習コストが下がる場合。本プロジェクトでは §2.6.3 の比較サンプル 1 本でこれらの感触を体験できるよう設計してある
 
 #### 2.6.3 プロトタイプ設計（vi.mock vs Capacitor 公式 mock）
 
