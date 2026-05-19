@@ -33,6 +33,7 @@ npm-debug.log*
 /tests/e2e/screenshots
 /tests/e2e/reports
 /tests/e2e/videos
+/test-results.xml
 
 /dist
 /node_modules
