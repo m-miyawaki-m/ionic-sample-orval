@@ -288,11 +288,35 @@ weighted_score = Σ(score_i × weight_i) / Σ(weight_i where score_i ≠ NA)
 
 #### 2.5.1 採点表
 
-`(後続 plan で埋める)`
+| 軸 | Cypress | 根拠 | Playwright | 根拠 | WebdriverIO | 根拠 |
+|---|---|---|---|---|---|---|
+| L1 学習コスト | 5 | `cy.visit` → `cy.contains` → `cy.click` の chain API で同期的に読める。既存 `tests/e2e/specs/items-flow.cy.ts` が 21 行で完結し、自動ウェイトのおかげで `await` 不要（公式 + 既存コード） | 4 | `page.goto` / `page.locator` は直感的だが、すべて `await` 必須で Promise を理解していないと躓く。代わりに `codegen` で操作を録画してコード生成できる学習導線あり（公式 + 体感） | 3 | WebDriver プロトコル + service / capabilities / Mocha 連携の概念を順に学ぶ必要があり、「最初の 1 本」までの距離が長い。sync/async モードの歴史的経緯も学習者を混乱させる（公式 + 体感） |
+| L2 ドキュメント | 5 | docs.cypress.io は章立て + Recipes + 公式ブログ + Discord が厚く、日本語記事と StackOverflow 解答は E2E 系最多（公式 + 体感） | 5 | playwright.dev は API リファレンス・Best Practices・Trace Viewer ガイドが章立てで揃い、Microsoft 公式ブログ + YouTube + 日本語記事も急増中（公式 + 体感） | 4 | webdriver.io 公式は完成度が高く Mocha / Jasmine / Cucumber 連携も網羅。ただし日本語記事は Cypress / Playwright と比べて 1 段薄い（公式 + 体感） |
+| L3 既存親和性 | 5 | 既存 devDep に `cypress ^13.5.0` + `cypress-multi-reporters ^2.0.5` + `mochawesome` + `mocha-junit-reporter`、`frontend/cypress.config.ts` で mochawesome / junit 出力が稼働中、`tests/e2e/specs/items-flow.cy.ts` も実装済み（既存コード） | 3 | 別 dep（`@playwright/test` + ブラウザバイナリ ~300MB）追加と独立 config が必要。Vite dev サーバとは共存可能で MSW handler を再利用できる（公式 + 体感） | 2 | 既存 dep 未導入。`@wdio/cli` + `wdio.conf.ts` + services + reporters を独自構成で立てる必要があり、本リポジトリの Cypress 既存パイプとは完全に別系統になる（公式 + 体感） |
+| L4 デバッグ体験 | 5 | Test Runner の time-travel snapshot で各コマンドの DOM 状態を遡れる、`cypress open` の対話モードで失敗箇所の DOM / Network が即可視化、`cy.pause()` / `.debug()` の介入も容易（公式 + 体感） | 5 | Trace Viewer がタイムライン + DOM スナップ + Network + Console + Source を 1 枚で見せ、`--ui` mode の watch + filter + step、`codegen` の逆方向利用で再現コードを生成できる（公式 + 体感） | 3 | `browser.debug()` で REPL を開ける程度。time-travel / Trace Viewer 相当の DOM タイムライン UI はなく、失敗時のスクショとログ + DevTools 接続に頼る（公式 + 体感） |
+| L5 VSCode 統合 | 4 | 公式 `cypress.vscode-cypress` 拡張で Run/Debug 可能。Vitest Explorer ほど Watch lens は強くないが、`cypress open` がプロセス常駐するため tasks.json + 外部 launcher の運用が標準（公式 + 体感） | 4 | 公式 `ms-playwright.playwright` 拡張で Run/Debug/Record/Pick Locator が揃う。テストエクスプローラ統合は Cypress と同等か少し上だが、Vue 開発者の利用例は Cypress より少ない（公式 + 体感） | 3 | `wdio-vscode-service` 等のサードパーティ拡張はあるが普及度が低く、Run/Debug の事実上標準は確立していない（公式 + 体感） |
+| L6 保守性 | 4 | 月次マイナーリリース、Chrome / Firefox / Edge 追従は速い。ただし v13 から v14 で WebDriver BiDi 移行を含む破壊変更があり、移行時に config / plugin の書き換えが要る（公式 GitHub releases） | 5 | Microsoft メンテで月次マイナー、ブラウザバージョン追従が即時、メジャーリリースの移行ガイドも丁寧。release cadence は 3 候補で最も予測可能（公式 GitHub releases） | 4 | OpenJS 配下で活発、v9 系で ESM/TS 対応が前進。メジャー移行（v7→v8→v9）は破壊が大きく、services 系プラグインの追従が 1 拍遅れる傾向（公式 GitHub releases） |
+| L7 実行速度 | 3 | 既定は単一ブラウザの逐次実行で、`cypress run` の cold start に数秒、フル動作で spec あたり 10-30 秒。並列実行は Cypress Cloud / `--parallel` の sharding が前提（公式 + 体感） | 5 | worker 並列実行と複数ブラウザ並走が標準、`fullyParallel: true` で 1 spec 内の test も並列化可能。公開ベンチで Cypress 比 2-3 倍高速の報告多数（公式 + 体感） | 4 | parallel runner で複数 capability 並走が可能だが、WebDriver プロトコル経由のオーバーヘッドで Playwright の CDP 直叩きには劣る。Cypress の単一ブラウザよりは速い（公式 + 体感） |
+| L8 エコシステム | 5 | mochawesome / mocha-junit-reporter / Cypress Cloud / Percy / Applitools 等のプラグイン市場が成熟、既存 `cypress.config.ts` でも `cypress-multi-reporters` 経由で 2 レポータを併用済み（既存コード + 公式） | 5 | HTML report / JUnit / JSON / allure / GitHub Actions 公式アクション、`trace` / `codegen` / `Pick Locator` / Component Testing / API Testing と機能群が広い（公式） | 4 | service 機構（Sauce Labs / BrowserStack / Appium / Electron / Visual Regression）が広大で、モバイル / デスクトップ込みの統合テストに強い。Web E2E 単独だと過剰機能（公式） |
+| **総合（加重平均）** | **4.58** | — | **4.42** | — | **3.30** | — |
+
+> 計算例 (Cypress): 分子 = 5×1.5 + 5×1.5 + 5×1.5 + 5×1.2 + 4×1.2 + 4×1.0 + 3×1.0 + 5×1.0 = 7.5 + 7.5 + 7.5 + 6.0 + 4.8 + 4.0 + 3.0 + 5.0 = **45.3**、分母 = 1.5×3 + 1.2×2 + 1.0×3 = **9.9**、45.3 / 9.9 ≈ **4.58**（判定: 優秀）
+> 計算例 (Playwright): 分子 = 4×1.5 + 5×1.5 + 3×1.5 + 5×1.2 + 4×1.2 + 5×1.0 + 5×1.0 + 5×1.0 = 6.0 + 7.5 + 4.5 + 6.0 + 4.8 + 5.0 + 5.0 + 5.0 = **43.8**、分母 = **9.9**、43.8 / 9.9 ≈ **4.42**（判定: 良好）
+> 計算例 (WebdriverIO): 分子 = 3×1.5 + 4×1.5 + 2×1.5 + 3×1.2 + 3×1.2 + 4×1.0 + 4×1.0 + 4×1.0 = 4.5 + 6.0 + 3.0 + 3.6 + 3.6 + 4.0 + 4.0 + 4.0 = **32.7**、分母 = **9.9**、32.7 / 9.9 ≈ **3.30**（判定: 要注意）
+
+> ※ 上の総合スコア（4.58 / 4.42 / 3.30）は「公開資料（docs.cypress.io / playwright.dev / webdriver.io）+ 既存 `frontend/cypress.config.ts` / `tests/e2e/specs/items-flow.cy.ts` 体感」を根拠とする暫定値。Cypress は判定「優秀」、Playwright は「良好」帯の上位で両者の差は L3 既存親和性（5 対 3）と L7 実行速度（3 対 5）が相殺し、僅差で Cypress が上回る。WebdriverIO は判定「要注意」で、本プロジェクトの「学習サンプル集」目的では Cypress vs Playwright の対比で十分に学習導線が確保できるため不採用 — §1.3 の判定区分どおり「単独採用には弱いが、教材として比較対象にする価値はあるか」を §2.5.2 で検討する。
 
 #### 2.5.2 採否解説
 
-`(後続 plan で埋める)`
+- **合意点**: 3 者とも実ブラウザ（または Chromium / Firefox / WebKit）に対するエンドツーエンド操作（visit / click / type / assertion）、ネットワークインターセプト、スクリーンショット、レポーター出力（JUnit / HTML）、CI 連携を提供する。TypeScript 型定義を同梱し、Vue / Ionic を含む SPA の「ユーザ視点シナリオ」を 1 ファイルで完結させられる
+- **差分**:
+  - L1 学習コスト: **Cypress** の chain API は自動ウェイト付きで同期的に読め、初学者の「await を忘れて flaky」事故が起きない。**Playwright** はすべて `await` 必須で Promise 理解が前提だが `codegen` で操作録画 → コード生成の学習導線あり。**WebdriverIO** は WebDriver 仕様 + service / capability 概念が積層し、「最初の 1 本」まで距離が長い
+  - L3 既存親和性: 差が決定的。**Cypress** は既存 `cypress.config.ts` + `cypress-multi-reporters` + mochawesome / junit パイプが稼働中で、`tests/e2e/specs/items-flow.cy.ts` も実装済み（5 点）。**Playwright** は別 dep + ブラウザバイナリ ~300MB + 独立 config が必要（3 点）。**WebdriverIO** は既存パイプから完全に別系統で学習価値の対比が薄い（2 点）
+  - L4 デバッグ体験: Cypress の time-travel snapshot と Playwright の Trace Viewer はそれぞれ別方向に強力で同点（5 / 5）。WebdriverIO は `browser.debug()` REPL に留まり 1 段見劣りする（3）
+  - L7 実行速度: **Playwright** の worker 並列 + 複数ブラウザ並走（5 点）が **Cypress** の単一ブラウザ逐次（3 点）を明確に上回り、テストスイートが大規模化した際に効いてくる。**WebdriverIO** はその中間（4 点）
+  - L8 エコシステム: Cypress / Playwright は機能群の方向性が異なるが両者とも 5 点圏（Cypress=プラグイン市場 / Cloud、Playwright=codegen / trace / Component Testing）。WebdriverIO は service 機構（Appium / BrowserStack 連携）に強みがあるが Web E2E 単独だと過剰機能
+- **本プロジェクトでの選択理由**: 親戦略書 §1.1「**E2E は Cypress + Playwright 比較で十分。学習サンプルとしての差別化が薄い（WebdriverIO 不採用理由）**」を直接の根拠とし、(1) L3 既存親和性の差（Cypress=5 / Playwright=3 / WebdriverIO=2）が決定打、(2) Cypress の time-travel と Playwright の Trace Viewer は「同シナリオを 2 手法で比較する」教材として読み合わせ価値が高く §2.5.3 プロトタイプ設計で `items-flow` 動線を両者で揃える方針、(3) WebdriverIO は L1 / L3 / L4 すべてで Cypress・Playwright に対して劣後し、客観評価でも「要注意」帯のため学習サンプルとしての残置も見送る、の 3 点。客観評価では Cypress=4.58（優秀）/ Playwright=4.42（良好）と両者が上位帯のため、Playwright を比較サンプル枠で残す判断は妥当
+- **学習者向けメモ**: 以下のいずれかに該当する場合は Playwright / WebdriverIO への切り替えを検討する余地がある: (a) **Playwright**: テストスイートが数百本規模に膨らみ CI 実行時間が学習継続性を下げ始めた場合（L7 並列実行のメリットが顕在化）、Vue/Vite と独立した「フレームワーク非依存の E2E」を学びたい場合、API テスト + Component Testing + Visual Regression を 1 ツールで統合したい場合。本書 §2.5.3 のプロトタイプサンプル 1 本で書き心地を体感できる。(b) **WebdriverIO**: モバイル（Appium）+ デスクトップ（Electron）+ Web を同一テストランナーで束ねたい場合、Sauce Labs / BrowserStack のクラウド実行を主目的にする場合、Cucumber BDD と E2E を統合したい場合。Web 単独の SPA テストで採用するメリットは薄いため、本プロジェクトの教材枠では §2.5.1 採点表で「不採用判断の客観根拠」を学ぶ材料として残す
 
 #### 2.5.3 プロトタイプ設計（Cypress vs Playwright）
 
