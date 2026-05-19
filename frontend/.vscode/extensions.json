@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "Vue.volar",
+    "vitest.explorer",
+    "dbaeumer.vscode-eslint",
+    "vscjava.vscode-java-pack",
+    "vscjava.vscode-gradle",
+    "vscjava.vscode-java-test",
+    "ms-vscode.js-debug"
+  ]
+}

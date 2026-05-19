@@ -9,6 +9,11 @@ target/
 
 # IDE
 .vscode/
+!frontend/.vscode/
+frontend/.vscode/*
+!frontend/.vscode/extensions.json
+!frontend/.vscode/launch.json
+!frontend/.vscode/tasks.json
 .idea/
 *.iml
 
