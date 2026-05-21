@@ -19,6 +19,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    setupFiles: ['./test-setup.ts'],
     reporters: ['default', 'html', 'junit'],
     outputFile: {
       html: '.vitest-report/index.html',
@@ -29,7 +30,7 @@ export default defineConfig({
       reporter: ['text', 'html'],
       reportsDirectory: 'coverage',
       include: ['src/**/*.{ts,vue}'],
-      exclude: ['src/**/*.{test,spec}.ts', 'src/api/**', 'src/mocks/generated/**']
+      exclude: ['src/**/*.{test,spec}.ts', 'src/api/**', 'src/mocks/generated/**', 'src/test-utils/**']
     }
   }
 })
