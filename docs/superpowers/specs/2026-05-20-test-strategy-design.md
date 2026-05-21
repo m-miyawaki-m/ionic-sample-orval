@@ -85,6 +85,100 @@
 | 比較サンプル | Capacitor 公式 mock パターン（`@capacitor/core` の `WebPlugin` 派生） | 公式手法との対比 |
 | Instrumented | モックなし、実 SDK | 実機検証の意義そのもの |
 
+### 2.5 単体テストの定義と境界
+
+§2.1 ピラミッドで「単体テストか E2E か」が紛らわしくなる層（コンポーネント / 関数 / UI）の分類を本節で確定する。本プロジェクトは**実行プロセスの境界**で線を引く — Vitest / Gradle JUnit のようにプロセス内完結で実行できるテストを「単体テスト」とし、実ブラウザ / 実機 / 別 OS プロセスが必要なものを「E2E（または instrumented）」とする。
+
+#### 2.5.1 定義
+
+> **単体テスト** = Vitest（Frontend）または Gradle JUnit（Android JVM）で、**プロセス内完結・モック前提・watch 対応**のフィードバックループで実行できるテスト。
+
+「単体」の境界は**コードの粒度**（関数 1 個 vs クラス 1 個）ではなく**実行プロセスの境界**で引く。jsdom や MSW（`msw/node` の interceptor 経路）は同一 Vitest プロセス内で動くため単体に含み、Cypress dev サーバや Android エミュレータは別プロセスのため含まない。本定義により、**コンポーネントテストは「単体」に分類される**（一般用語の「コンポーネント統合テスト」とは異なる本プロジェクトの規約）。
+
+#### 2.5.2 In / Out 判定表
+
+| 種別 | 単体か | ランナー | 根拠 |
+|---|---|---|---|
+| Composable / 関数テスト（`useDemoSdk` 等） | ✅ 単体 | Vitest + `vi.mock` | 純ロジック、ブリッジは `vi.mock` で置換 |
+| Component テスト（VTU + jsdom + MSW） | ✅ 単体 | Vitest + VTU | jsdom と MSW（Node）はプロセス内、ブラウザ起動なし |
+| Pinia / store テスト（将来導入時） | ✅ 単体 | Vitest | 状態管理ロジックは Vitest で完結 |
+| `scripts/gen-fixtures.ts` / `gen-cases.ts` ロジック | ✅ 単体 | Vitest | 入力 YAML / Markdown と期待出力を fixture で検証 |
+| MSW handler のレスポンス検証 | ✅ 単体 | Vitest + `setupServer`（`msw/node`） | Node 環境で fetch を発火、handler ロジック単独検証 |
+| Snapshot テスト（`toMatchSnapshot`） | ✅ 単体（広義） | Vitest | プロセス内完結。ただし学習サンプル集としては**推奨外**（後述 Q3） |
+| Android AAR 内ロジック（`demo-sdk`） | ✅ 単体 | Gradle JVM (`./gradlew :demo-sdk:test`) | JVM 内完結、Android Framework 不要 |
+| E2E 動線テスト（Cypress `items-flow`） | ❌ E2E | Cypress | 実ブラウザ起動、dev サーバ別プロセス |
+| Espresso instrumented | ❌ instrumented | Gradle `:app:connectedAndroidTest` | AVD / 実機が別プロセス（§4.5） |
+| Visual Regression（Chromatic 等） | ❌（採用外） | — | 実ブラウザ起動 + クラウド比較で単体ではない |
+| Robolectric | ❓（採用外） | — | Android Framework を JVM 上で疑似実行。§1 で採用していない |
+
+#### 2.5.3 クロスプラットフォーム対応表
+
+| 観点 | Frontend | Android |
+|---|---|---|
+| 単体テストランナー | **Vitest** | **Gradle JUnit4**（`com.android.library` の `testImplementation`） |
+| watch コマンド | `npm run test:unit`（既定で watch） | `./gradlew :demo-sdk:test --continuous` |
+| 1 回実行コマンド | `npm run test:unit -- --run` | `./gradlew :demo-sdk:test` |
+| モック対象 | `@/native/...` を `vi.mock`、HTTP は MSW | 純 JUnit（必要なら将来 Mockito / MockK） |
+| デバッグ | VSCode Vitest Explorer + JS Debug Terminal | VSCode Java Test Runner（`vscjava.vscode-java-test`） |
+| HTML レポート | `frontend/.vitest-report/index.html`（§5.1） | `frontend/android/demo-sdk/build/reports/tests/test/index.html`（§5.1） |
+| JUnit XML | `frontend/.vitest-report/junit.xml`（§5.1） | `frontend/android/demo-sdk/build/test-results/test/*.xml`（§5.1） |
+| カバレッジ | `frontend/coverage/index.html`（`@vitest/coverage-v8` 導入済み） | JaCoCo（将来導入候補） |
+| プロセス境界 | Node.js + jsdom | JVM のみ（Android SDK / エミュ不要） |
+| 単体外の層 | E2E (Cypress) | Espresso instrumented (`:app:connectedAndroidTest`) |
+
+#### 2.5.4 境界ケース Q&A
+
+- **Q1: VTU + jsdom + MSW で API を呼ぶコンポーネントテストは「単体」？「統合」？**
+  A: 本プロジェクトでは**単体**。jsdom と MSW（Node モード）は Vitest プロセス内で完結し、外部依存（実 API / 実 DB / 実ブラウザ）がない。一般用語では「コンポーネント統合テスト」と呼ばれる場合もあるが、本プロジェクトでは Vitest 実行＝単体で統一する。
+
+- **Q2: `vi.mock` で `@/native/demo-sdk-bridge` を差し替えたテストは、ブリッジ依存があるから統合テストでは？**
+  A: 違う。`vi.mock` でモジュール全体を置換した時点で外部依存は消えており、純粋に Vitest プロセス内で完結するため**単体**。実ブリッジに依存するのは Espresso 側のみ。
+
+- **Q3: Snapshot テスト（`toMatchSnapshot()`）は推奨されるか？**
+  A: 単体テスト枠には含むが**学習サンプル集としては推奨外**。Ionic / Vue の SFC は描画差分が出やすく、保守コストの学習価値より「割れて困る」のほうが先に来る。明示的な `toContain` / `toHaveAttribute` を学ぶほうが本プロジェクトの目的と整合する。
+
+- **Q4: `scripts/gen-fixtures.ts` や `scripts/gen-cases.ts` 自体のテストは単体か？**
+  A: **単体**。Vitest で実行可能で、入力 YAML / Markdown と期待出力を fixture で持たせれば純関数テストとして書ける（§3.4 のジェネレータ仕様参照）。
+
+- **Q5: MSW handler 自体のテスト（リクエストに対する正しいレスポンス）は単体か？**
+  A: **単体**。MSW は `msw/node` の `setupServer` で Node 環境でも動かせるため、Vitest 内で fetch を発火させる形が取れる。E2E のシナリオ駆動とは別に、handler ロジックそのものを単体で検証できる。
+
+- **Q6: Vue Router の遷移を検証するコンポーネントテストは単体か？**
+  A: **単体**。`createMemoryHistory()` を使えば実ブラウザの History API は不要で、Vitest プロセス内で完結する。`router.push()` の結果を `router.currentRoute.value` で読むパターン。
+
+- **Q7: Capacitor `WebPlugin` 派生クラスを使った比較サンプル（§2.4 比較サンプル行）は単体か？**
+  A: **単体**。`registerPlugin` で web fallback として登録した時点で Vitest プロセス内に閉じる。実機ブリッジ依存は Espresso のみ。
+
+- **Q8: Android `demo-sdk` の Espresso 1 ケース（§4.5）はなぜ単体に含めない？**
+  A: AVD / 実機の別プロセス起動が必須で、`./gradlew :demo-sdk:test` の JVM 単体経路から外れるため。`:app:connectedAndroidTest` で起動する instrumented test は本プロジェクトでは「実機検証 = E2E に相当」と扱う（§4.5 で CI 含めない方針を明記）。
+
+#### 2.5.5 CI / npm script マッピング
+
+| script / task | 実行内容 | 単体テスト枠 | 想定実行頻度 |
+|---|---|---|---|
+| `npm run test:unit` | `vitest`（watch 既定） | ✅ Frontend 単体すべて | 開発中常駐 |
+| `npm run test:unit -- --run` | 1 回実行モード | ✅ 同上 | CI / pre-commit |
+| `npm run test:e2e` | `cypress run` | ❌ E2E | PR 必須（dev サーバ起動が要件） |
+| `./gradlew :demo-sdk:test` | Android JVM unit | ✅ Android 単体すべて | PR 必須 |
+| `./gradlew :app:connectedAndroidTest` | Espresso（AVD 起動必須） | ❌ instrumented | ローカル手動のみ（§4.5「CI 含めない」方針） |
+
+**未導入の script（plop 雛形で追加候補）**:
+
+- `npm run test:component`: 現状は `test:unit` 内に包含。spec 数が増えて分割が必要になったら Vitest の `--project` 分割で `test:unit:composable` / `test:component` に分けることを検討（§6 Open Items 候補）
+- `npm run test:unit:coverage`: `@vitest/coverage-v8` は導入済みのため `vitest --coverage` で動作。CI 集計用の script として明示化する余地あり
+
+**GitHub Actions（将来）の job 分割推奨**:
+
+```yaml
+jobs:
+  unit-frontend:        # npm run test:unit -- --run
+  unit-android:         # ./gradlew :demo-sdk:test
+  e2e-frontend:         # npm run test:e2e（MSW + dev サーバ + Cypress）
+  # :app:connectedAndroidTest は §4.5 により CI 対象外（ローカル手動）
+```
+
+単体（`unit-*` job）は PR 必須・並列実行・5 分以内目標、E2E は PR 必須だが unit より後段、Android instrumented はローカル手動、というのが本節の単体定義に基づく自然な分割。
+
 ---
 
 ## 3. 設計書 → テストデータ 自動連係パイプライン
