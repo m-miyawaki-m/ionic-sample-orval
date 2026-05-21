@@ -20,4 +20,13 @@ export default defineConfig({
       },
     },
   },
+  apiZod: {
+    input: '../openapi/openapi.yaml',
+    output: {
+      mode: 'tags-split',
+      client: 'zod',
+      target: 'src/api/zod',
+      fileExtension: '.zod.ts',
+    },
+  },
 })

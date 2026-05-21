@@ -670,3 +670,72 @@ Step 1〜4 は既存機能の挙動を変えないリファクタとして実施
 3. **依存方向**は pages → layouts → organisms → molecules → atoms の単方向。
 4. **`IconTextButton` の `variant="icon-only"` は `label` 必須**（a11y）。
 5. **bottom sheet を使う場合は `breakpoints` と `initialBreakpoint` 必須**。指定なしだと挙動が iOS/Android で差が出る。
+
+---
+
+## 10. 実装サンプル（本リポジトリ）
+
+本ドキュメントで定義した 5 パターンを実際に動くサンプルとして本リポジトリに実装済み。
+
+| エントリ | パス | レイアウト | 主な動作 |
+|---------|------|-----------|----------|
+| サンプル一覧 | `/` | `SamplesIndexView.vue` | 5 パターン + 既存デモへの入口 |
+| Pattern A | `/samples/a` | Simple Stack | 一覧 → 詳細 |
+| Pattern B | `/samples/b` | Menu Home | ダッシュボード → 一覧 → 詳細 |
+| Pattern C | `/samples/c` | Bottom Tabs | ホーム / 商品 / 設定 タブ |
+| Pattern D | `/samples/d` | Side Drawer | IonSplitPane + IonMenu |
+| Pattern E | `/samples/e` | Tabs + Drawer | 主機能タブ + 補助 drawer |
+
+### データ取得スタック
+
+各サンプルは `useItems()` / `useItem(id)` composable 経由で API データを取得する。
+
+```
+OpenAPI (openapi/openapi.yaml)
+  ↓ orval gen
+src/api/default/default.ts          ← axios client (listItems, getItem, ...)
+src/api/zod/default/default.zod.ts  ← zod schema (ListItemsResponse, ...)
+  ↓
+src/composables/useItems.ts         ← axios 呼び出し + zod.parse() でランタイム検証
+  ↓
+各 *ListView.vue / *DetailView.vue
+```
+
+### MSW
+
+dev 環境は `.env.development` の `VITE_USE_MOCK=msw` により MSW が自動起動し、
+OpenAPI examples をベースとした生成 handler が `/api/items` 系を返す。
+本番 API（Spring Boot）が起動していなくても全パターンが動作する。
+
+---
+
+## 11. 他に検討できる要素
+
+実装サンプルは「レイアウト構造のデモ」を目的とした最小実装。プロダクション化する際の検討事項：
+
+### データ層
+- **状態管理**: 現状は composable 内 `ref` のみ。複数画面で同じデータを共有する場合は **Pinia** で `useItemsStore()` 化を検討
+- **データキャッシュ**: stale-while-revalidate が欲しければ **Tanstack Query (vue-query)** 導入
+- **API キャンセル**: `axios.ts` は cancelToken を生成しているが composable が活用していない。unmount 時の自動キャンセル未実装
+- **オフライン対応**: Capacitor + Service Worker / IndexedDB / Capacitor Preferences でのキャッシュ層未対応
+- **zod の nullable / optional**: OpenAPI で `nullable: true` を使う場合の orval-zod 出力は要検証
+
+### UI 層
+- **共通 AppLayout 未抽出**: §2 で推奨した `AppLayout.vue` をサンプルでは各 View に重複展開している（学習用に明示的に書いた）。プロダクションでは抽出推奨
+- **Skeleton Loading**: 現状 "Loading..." テキスト。`IonSkeletonText` で体感改善余地
+- **Pull-to-Refresh**: `IonRefresher` を各一覧に追加可能だが未実装
+- **無限スクロール**: `IonInfiniteScroll` + ページング API 対応が必要（現 API はページング未対応）
+- **ダイアログ部品**: §4.5 で示した `ConfirmDialog` / `useToast` / `useLoading` / `ItemFormDialog` 等は未実装
+- **Detail View の編集**: 5 パターンとも詳細画面は read-only。プロダクトでは編集 Modal 起動が必要
+- **a11y**: アイコンのみボタンの `aria-label`、Picker のフォーカス管理は未整理
+
+### ナビゲーション層
+- **Pattern E の Drawer 位置**: 右側 (`side="end"`) で実装。Material Design 規約では左側が主流。プロダクトでは要相談
+- **ハードウェアバック処理**: Capacitor `App.backButton` イベントで「dialog 閉じ > menu 閉じ > 戻る」の優先順位を明示する設計が要る
+- **Deep Link**: Capacitor `App.appUrlOpen` 経由で外部 URL から特定パターンを開く対応未実装
+
+### 横断
+- **i18n**: 日本語ハードコード。`vue-i18n` 導入で多言語化可能
+- **ダークモード**: `dark.system.css` 読み込み済みだが、各 View の配色未検証
+- **テスト**: 新規 5 パターンの View にはユニットテスト/ E2E 未追加（既存 4 View は P0–P3 で網羅済み）
+- **コード分割**: 現状 vendor bundle が 1MB 超え。`build.rollupOptions.output.manualChunks` で改善余地
