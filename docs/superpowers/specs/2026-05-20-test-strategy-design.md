@@ -582,7 +582,7 @@ ionic-sample-orval/
 | **P0** 基盤整備 | `.vscode/*.json`、Vitest reporter 拡張、Cypress reporter 設定、`.gitignore` 更新 | VSCode 拡張インストール後、Vitest と Cypress を VSCode から実行可能。HTML レポートが生成される | なし | ✅ 完了 |
 | **P1** 設計書連係（API） | OpenAPI examples 拡張、`gen-fixtures.ts`、`npm run gen:fixtures`、`mocks/generated/` 反映 | `npm run gen:fixtures` 冪等。fixture を使った Cypress 1 spec が通る | P0 | ✅ 完了（`cec45a4`, `f22b8fe`, `aa8ef43`, `17751bc`） |
 | **P2** 設計書連係（MD） | `docs/specs/cases/*.md`、`gen-cases.ts`、`useDemoSdk.init` を MD 駆動に置換 | MD → `*.cases.generated.ts` → Vitest `it.each` が通る。元の手書き spec を比較として残す | P0 | ✅ 完了（`930125b`, `597eee6`, `672a313`, `5873fca`） |
-| **P3** Component / E2E サンプル | `views/__tests__/{ListView,DetailView,CreateView,BridgeDemoView}.spec.ts`、`tests/e2e/specs/items-flow.cy.ts` を List→Detail→Create→Delete 動線まで拡張 | Cypress E2E が dev サーバ＋MSW で動く。失敗時スクショが取れる | P0, P1 | ⏸ 未着手（plan `…-test-strategy-p3.md` 参照） |
+| **P3** Component / E2E サンプル | `views/__tests__/{ListView,DetailView,CreateView,BridgeDemoView}.spec.ts`、`tests/e2e/specs/items-flow.cy.ts` を List→Detail→Create→Delete 動線まで拡張 | Cypress E2E が dev サーバ＋MSW で動く。失敗時スクショが取れる | P0, P1 | ✅ 完了 |
 | **P4** Android SDK 実行環境 | Gradle JVM unit から VSCode 実行、Java Pack 拡張一覧、`tasks.json` 追記 | VSCode 上で `DemoSdkTest.kt` の lens から Run/Debug 可能 | P0 | ⏸ 未着手 |
 | **P5** Android Instrumented サンプル | Espresso 1 ケース、エミュ起動・スクショ取得手順を README に追加 | エミュ起動 → `gradle connectedAndroidTest` 通る。スクショ artifact がローカルで取れる | P4 | ⏸ 未着手 |
 | **P6** 比較サンプル | `__samples__/comparison/` に Playwright・TL・Capacitor mock を 1 本ずつ | 各サンプル単独で実行可能。設計書比較表に「採用 vs 比較」のリンク追加 | P3 | ⏸ 未着手 |
@@ -651,7 +651,7 @@ P3 だけ進める場合は別 PR 不要で `feature/test-strategy-p0-p2` から
 
 ### 6.4 Open Items（未確定事項）
 
-1. **Vitest コンポーネントテストで Ionic コンポーネントを描画したときのスタイル/イベントの限界**: jsdom では shadow DOM が完全に描画されないため、深い検証は Cypress に寄せる。境界の線引きはサンプル実装時に判明する見込み
+1. **Vitest コンポーネントテストで Ionic コンポーネントを描画したときのスタイル/イベントの限界**（P3 で検証）: `IonicVue` プラグイン install + jsdom で `ion-item` / `ion-button` / `ion-card` / `ion-text` / `ion-input` の構造的検証（テキスト・属性・クリック）は可能。`ion-input` の v-model 経路は `vm.$emit('update:modelValue', ...)` または `setValue` で動作。`ion-button` の `disabled` は HTML 属性ではなく DOM プロパティとして反映されるため `element.disabled` で検証する（`attributes('disabled')` は機能しない）。`IonBackButton` は `navManager` injection 警告を出すが描画自体は機能し、テスト失敗には繋がらない。動的アニメーションや Shadow DOM 内スタイル検証は引き続き Cypress に寄せる方針を維持
 2. **MD 決定表のパーサ仕様**: 型情報をどこまで持たせるか（数値・真偽・null の表現）は P2 着手時に確定
 3. **Android instrumented の AVD 名**: 固定するか可変かは P5 で決める（README のサンプルに `Pixel_API_33` を例示）
 4. **比較サンプル CI 実行の重さ**: Playwright を CI で毎回走らせるかはサンプル実装後にベンチ
