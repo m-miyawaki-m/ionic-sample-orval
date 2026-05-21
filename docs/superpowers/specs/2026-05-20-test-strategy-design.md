@@ -577,19 +577,70 @@ ionic-sample-orval/
 
 ### 6.2 段階導入計画
 
-| Phase | スコープ | 受け入れ基準 |
-|---|---|---|
-| **P0** 基盤整備 | `.vscode/*.json`、Vitest reporter 拡張、Cypress reporter 設定、`.gitignore` 更新 | VSCode 拡張インストール後、Vitest と Cypress を VSCode から実行可能。HTML レポートが生成される |
-| **P1** 設計書連係（API） | OpenAPI examples 拡張、`gen-fixtures.ts`、`npm run gen:fixtures`、`mocks/generated/` 反映 | `npm run gen:fixtures` 冪等。fixture を使った Cypress 1 spec が通る |
-| **P2** 設計書連係（MD） | `docs/specs/cases/*.md`、`gen-cases.ts`、`useDemoSdk.init` を MD 駆動に置換 | MD → `*.cases.generated.ts` → Vitest `it.each` が通る。元の手書き spec を比較として残す |
-| **P3** Component / E2E サンプル | `views/__tests__/ListView.spec.ts`、`tests/e2e/specs/items-flow.cy.ts`（雛形 → 実装） | Cypress E2E が dev サーバ＋MSW で動く。失敗時スクショが取れる |
-| **P4** Android SDK 実行環境 | Gradle JVM unit から VSCode 実行、Java Pack 拡張一覧、`tasks.json` 追記 | VSCode 上で `DemoSdkTest.kt` の lens から Run/Debug 可能 |
-| **P5** Android Instrumented サンプル | Espresso 1 ケース、エミュ起動・スクショ取得手順を README に追加 | エミュ起動 → `gradle connectedAndroidTest` 通る。スクショ artifact がローカルで取れる |
-| **P6** 比較サンプル | `__samples__/comparison/` に Playwright・TL・Capacitor mock を 1 本ずつ | 各サンプル単独で実行可能。設計書比較表に「採用 vs 比較」のリンク追加 |
-| **P7** plop 雛形 | `plopfile.mjs` + 全テンプレ、`npm run scaffold` | `plop view foo` が View+composable+spec×4 を生成し、雛形が即時 pass する（空 spec で OK） |
-| **P8**（任意） CI | GitHub Actions：lint + vitest + cypress headless + gradle test、artifact upload | PR で全テスト走る。失敗時 artifact からスクショ取得可能 |
+| Phase | スコープ | 受け入れ基準 | 依存 | 状況 (2026-05-22 時点) |
+|---|---|---|---|---|
+| **P0** 基盤整備 | `.vscode/*.json`、Vitest reporter 拡張、Cypress reporter 設定、`.gitignore` 更新 | VSCode 拡張インストール後、Vitest と Cypress を VSCode から実行可能。HTML レポートが生成される | なし | ✅ 完了 |
+| **P1** 設計書連係（API） | OpenAPI examples 拡張、`gen-fixtures.ts`、`npm run gen:fixtures`、`mocks/generated/` 反映 | `npm run gen:fixtures` 冪等。fixture を使った Cypress 1 spec が通る | P0 | ✅ 完了（`cec45a4`, `f22b8fe`, `aa8ef43`, `17751bc`） |
+| **P2** 設計書連係（MD） | `docs/specs/cases/*.md`、`gen-cases.ts`、`useDemoSdk.init` を MD 駆動に置換 | MD → `*.cases.generated.ts` → Vitest `it.each` が通る。元の手書き spec を比較として残す | P0 | ✅ 完了（`930125b`, `597eee6`, `672a313`, `5873fca`） |
+| **P3** Component / E2E サンプル | `views/__tests__/{ListView,DetailView,CreateView,BridgeDemoView}.spec.ts`、`tests/e2e/specs/items-flow.cy.ts` を List→Detail→Create→Delete 動線まで拡張 | Cypress E2E が dev サーバ＋MSW で動く。失敗時スクショが取れる | P0, P1 | ⏸ 未着手（plan `…-test-strategy-p3.md` 参照） |
+| **P4** Android SDK 実行環境 | Gradle JVM unit から VSCode 実行、Java Pack 拡張一覧、`tasks.json` 追記 | VSCode 上で `DemoSdkTest.kt` の lens から Run/Debug 可能 | P0 | ⏸ 未着手 |
+| **P5** Android Instrumented サンプル | Espresso 1 ケース、エミュ起動・スクショ取得手順を README に追加 | エミュ起動 → `gradle connectedAndroidTest` 通る。スクショ artifact がローカルで取れる | P4 | ⏸ 未着手 |
+| **P6** 比較サンプル | `__samples__/comparison/` に Playwright・TL・Capacitor mock を 1 本ずつ | 各サンプル単独で実行可能。設計書比較表に「採用 vs 比較」のリンク追加 | P3 | ⏸ 未着手 |
+| **P7** plop 雛形 | `plopfile.mjs` + 全テンプレ、`npm run scaffold` | `plop view foo` が View+composable+spec×4 を生成し、雛形が即時 pass する（空 spec で OK） | P3, P5 | ⏸ 未着手 |
+| **P8**（任意） CI | GitHub Actions：lint + vitest + cypress headless + gradle test、artifact upload | PR で全テスト走る。失敗時 artifact からスクショ取得可能 | P0（必須）+ 各 Phase（追加可） | ⏸ 未着手 |
 
 P0 → P1 → P2 まで進めば「設計書連係 + エビデンス取得」のコア価値が出る。P3-P5 が学習サンプルの本体。P6 と P7 は最後でよく、P8 は別 PR にしてもよい。
+
+#### 6.2.1 依存関係と並行実行可能性
+
+```
+                  ┌────────┐
+                  │   P0   │ 基盤整備（VSCode + reporter + .gitignore）
+                  └────┬───┘
+        ┌──────────────┼──────────────┐
+        ▼              ▼              ▼
+   ┌────────┐    ┌────────┐    ┌────────┐
+   │   P1   │    │   P2   │    │   P4   │   ← P0 完了後はこの 3 つを並列実行可
+   │ API gen│    │ MD gen │    │ Android│
+   └────┬───┘    └────────┘    │ JVM env│
+        │                       └────┬───┘
+        ▼                            ▼
+   ┌────────┐                   ┌────────┐
+   │   P3   │ ← P1 必須          │   P5   │ ← P4 必須
+   │ Comp + │   (E2E は fixtures │ Android│   (エミュ起動が前提)
+   │  E2E   │    に依存)         │  Esp   │
+   └────┬───┘                   └────┬───┘
+        │                            │
+        ├────────────┐               │
+        ▼            ▼               │
+   ┌────────┐   ┌────────┐           │
+   │   P6   │   │        │           │
+   │ 比較   │   │   P7   │ ← P3 + P5 │
+   │ サンプル│   │  plop  │   両方が│
+   └────────┘   │  雛形  │   揃ってから（雛形対象が全部出揃う）
+                └────┬───┘
+                     ▼
+                ┌────────┐
+                │   P8   │ ← 任意。P0 必須、含めるテストは終わったフェーズ分だけ
+                │   CI   │
+                └────────┘
+```
+
+**並列実行できる組み合わせ**:
+
+- **P0 完了後**: `{P1, P2, P4}` を別ブランチで並列実行可（互いに触るファイルが分離）
+- **P3 完了後**: `{P5, P6}` を並列実行可（P5 は Android 単独、P6 は frontend サンプルのみ）
+- **P7 / P8**: 並列実行は可能だが、P7 は前段の雛形パターンが揃ってからのほうが学習価値が高い
+
+**逆に直列が必要な箇所**:
+
+- **P3 ← P1**: items-flow.cy.ts が `gen-fixtures` で出力された `tests/e2e/fixtures/items.json` を読むため、P1 完了前に E2E spec は書けない
+- **P5 ← P4**: VSCode から Gradle タスクを起動する経路（P4）を確立してから Espresso（P5）に着手しないと、エミュ問題と環境問題の切り分けが困難
+- **P6 ← P3**: 比較サンプル（Playwright / TL）は採用品の同シナリオを並置するため、採用品（Cypress / VTU）の実装が先
+
+**現状（2026-05-22）からの最短経路**:
+
+P3 だけ進める場合は別 PR 不要で `feature/test-strategy-p0-p2` から派生可能。P3 と P4 を並列にしたいなら別ブランチを切る。詳細は P3 については `docs/superpowers/plans/2026-05-22-test-strategy-p3.md` 参照（P4 以降はまだ詳細プラン未作成）。
 
 ### 6.3 既存資産との関係
 
